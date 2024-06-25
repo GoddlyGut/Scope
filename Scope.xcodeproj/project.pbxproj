@@ -11,6 +11,11 @@
 		DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF338D8A2C27217D00E22348 /* ViewController.swift */; };
 		DF338D902C27217F00E22348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF338D8F2C27217F00E22348 /* Assets.xcassets */; };
 		DF338D932C27217F00E22348 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = DF338D922C27217F00E22348 /* Base */; };
+		DFF33C5A2C27704800EB915A /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C592C27704800EB915A /* Model.swift */; };
+		DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5B2C27717600EB915A /* CourseViewModel.swift */; };
+		DFF33C5E2C2771E200EB915A /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5D2C2771E200EB915A /* Extensions.swift */; };
+		DFF33C602C277E4D00EB915A /* CourseCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5F2C277E4D00EB915A /* CourseCell.swift */; };
+		DFF33C622C2A67DD00EB915A /* BottomSheetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C612C2A67DD00EB915A /* BottomSheetViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -21,6 +26,11 @@
 		DF338D922C27217F00E22348 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		DF338D942C27217F00E22348 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DFF33C582C2732A600EB915A /* Scope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scope.entitlements; sourceTree = "<group>"; };
+		DFF33C592C27704800EB915A /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
+		DFF33C5B2C27717600EB915A /* CourseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseViewModel.swift; sourceTree = "<group>"; };
+		DFF33C5D2C2771E200EB915A /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		DFF33C5F2C277E4D00EB915A /* CourseCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseCell.swift; sourceTree = "<group>"; };
+		DFF33C612C2A67DD00EB915A /* BottomSheetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +69,11 @@
 				DF338D8F2C27217F00E22348 /* Assets.xcassets */,
 				DF338D912C27217F00E22348 /* LaunchScreen.storyboard */,
 				DF338D942C27217F00E22348 /* Info.plist */,
+				DFF33C592C27704800EB915A /* Model.swift */,
+				DFF33C5B2C27717600EB915A /* CourseViewModel.swift */,
+				DFF33C5D2C2771E200EB915A /* Extensions.swift */,
+				DFF33C5F2C277E4D00EB915A /* CourseCell.swift */,
+				DFF33C612C2A67DD00EB915A /* BottomSheetViewController.swift */,
 			);
 			path = Scope;
 			sourceTree = "<group>";
@@ -133,7 +148,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DFF33C602C277E4D00EB915A /* CourseCell.swift in Sources */,
+				DFF33C622C2A67DD00EB915A /* BottomSheetViewController.swift in Sources */,
+				DFF33C5E2C2771E200EB915A /* Extensions.swift in Sources */,
+				DFF33C5A2C27704800EB915A /* Model.swift in Sources */,
 				DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */,
+				DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */,
 				DF338D872C27217D00E22348 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

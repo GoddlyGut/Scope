@@ -8,38 +8,51 @@
 import UIKit
 
 class ViewController: UIViewController {
-    let stackView = UIStackView()
-    let label = UILabel()
+
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         style()
         layout()
+
+        
+        presentSheet()
     }
 }
 
 extension ViewController {
     func style() {
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.axis = .vertical
-        stackView.spacing = 20
+        self.title = "Home"
+        view.backgroundColor = .systemBackground
         
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Welcome"
-        label.font = UIFont.preferredFont(forTextStyle: .title1)
+        
+        
     }
     
     func layout() {
-        stackView.addArrangedSubview(label)
-        
-        view.addSubview(stackView)
-        
         NSLayoutConstraint.activate([
-            stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            
         ])
     }
+    
+    @objc private func presentSheet() {
+        let sheetViewController = BottomSheetViewController()
+            sheetViewController.modalPresentationStyle = .pageSheet
+            
+            
+            if let sheet = sheetViewController.sheetPresentationController {
+                sheet.detents = [.medium(), .large()]
+                
+                sheet.prefersGrabberVisible = true
+                sheet.largestUndimmedDetentIdentifier = .medium
+                sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+                sheet.prefersEdgeAttachedInCompactHeight = true
+                sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
+            }
+            
+            present(sheetViewController, animated: true, completion: nil)
+        }
 }
-
 
