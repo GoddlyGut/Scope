@@ -7,8 +7,8 @@
 
 import Foundation
 
-enum DaysOfTheWeek {
-    case sunday
+enum DaysOfTheWeek: Int {
+    case sunday = 0
     case monday
     case tuesday
     case wednesday
@@ -17,21 +17,19 @@ enum DaysOfTheWeek {
     case saturday
 }
 
-struct Day {
-    var id: UUID
-    var day: DaysOfTheWeek
-    var courses: [Course]
-}
-
 struct Course {
     var id: UUID
     var name: String
     var instructor: String
-    var daysMeeting: [IndividualCourseSchedule]
+    var schedule: CourseSchedule
 }
 
-struct IndividualCourseSchedule {
-    var dayOfTheWeek: DaysOfTheWeek
-    var beginTime: Date
-    var endTime: Date
+struct CourseSchedule {
+    var meetings: [DailyMeeting]
+}
+
+struct DailyMeeting {
+    var day: DaysOfTheWeek
+    var startTime: String
+    var endTime: String
 }

@@ -50,7 +50,27 @@ class CourseCell: UITableViewCell {
     
     func configure(with course: Course) {
         courseNameLabel.text = course.name
-        courseTimingLabel.text = "\(course.daysMeeting.first?.beginTime.formattedHMTime() ?? "") - \(course.daysMeeting.first?.endTime.formattedHMTime() ?? "")"
+        
+        
+            let today = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: Date()) - 1)!
+            let now = Date()
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            let currentTime = formatter.string(from: now)
+
+            // Find the first course that has a meeting today and is currently in session
+            
+            let currentDay = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: now) - 1)!
+            
+            for course in CourseViewModel.shared.courses {
+                for meeting in course.schedule.meetings where meeting.day == currentDay {
+                    print(meeting.startTime)
+                    let startTime = meeting.startTime
+                    let endTime = meeting.endTime
+                    // Set the label text with the timing
+                    courseTimingLabel.text = "\(startTime)-\(endTime)"
+                }
+            }
     }
 
     

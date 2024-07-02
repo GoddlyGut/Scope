@@ -11,8 +11,6 @@ import UIKit
 class BottomSheetViewController: UIViewController, UITableViewDataSource {
     let stackView = UIStackView()
     let label = UILabel()
-    let courseNameLabel = UILabel()
-    let courseTimingLabel = UILabel()
     var tableView = UITableView()
     var sortedCourses: [Course] = []
     var blurEffectView = UIVisualEffectView()
@@ -24,16 +22,15 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
         style()
         layout()
         
-        sortedCourses = CourseViewModel.shared.sortedCourses()
+        sortedCourses = CourseViewModel.shared.coursesForToday()
         tableView.reloadData()
-        
+        self.isModalInPresentation = true
         
         tableView.contentInset.top = 45
         tableView.scrollIndicatorInsets = tableView.contentInset
         tableView.setContentOffset(CGPoint(x: 0, y: -tableView.contentInset.top), animated: false)
         tableView.contentInsetAdjustmentBehavior = .never
         tableView.automaticallyAdjustsScrollIndicatorInsets = false
-        presentSheet()
     }
     
     override func viewDidLayoutSubviews() {
@@ -72,7 +69,7 @@ extension BottomSheetViewController {
         stackView.addArrangedSubview(plusButton)
         
         divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.backgroundColor = .secondarySystemGroupedBackground
+        divider.backgroundColor = .secondarySystemFill
         
         
         
@@ -86,13 +83,9 @@ extension BottomSheetViewController {
         view.addSubview(blurEffectView)
         view.addSubview(stackView)
         view.addSubview(divider)
+
+            
         
-        courseNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        courseNameLabel.text = CourseViewModel.shared.day.courses.first?.name
-        courseNameLabel.font = UIFont.preferredFont(forTextStyle: .title1)
-        
-        courseTimingLabel.translatesAutoresizingMaskIntoConstraints = false
-        courseTimingLabel.text = "\( CourseViewModel.shared.day.courses.first?.daysMeeting.first?.beginTime.formattedHMTime() ?? "")-\( CourseViewModel.shared.day.courses.first?.daysMeeting.first?.endTime.formattedHMTime() ?? "")"
         
     }
     
@@ -117,23 +110,13 @@ extension BottomSheetViewController {
         ])
     }
     
-    @objc private func presentSheet() {
-            let sheetViewController = ViewController()
-            sheetViewController.modalPresentationStyle = .pageSheet
-        self.isModalInPresentation = true
-            if let sheet = sheetViewController.sheetPresentationController {
-                sheet.detents = [.medium(), .large()]
-                sheet.prefersGrabberVisible = true
-                sheet.largestUndimmedDetentIdentifier = .medium
-                sheet.prefersScrollingExpandsWhenScrolledToEdge = false
-                sheet.prefersEdgeAttachedInCompactHeight = true
-                sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
-                
-                
-            }
-            
-            present(sheetViewController, animated: false, completion: nil)
-        }
+    
+    func updateUIForHighDetent() {
+        label.text = "Test"
+    }
+    func updateUIForLowDetent() {
+        label.text = "Courses"
+    }
 }
 
 extension BottomSheetViewController: UIScrollViewDelegate {
@@ -175,4 +158,5 @@ extension BottomSheetViewController: UITableViewDelegate {
         return cell
     }
 }
+
 
