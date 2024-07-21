@@ -62,3 +62,8 @@ extension Date {
         return dateFormatter.string(from: self)
     }
 }
+
+
+extension Notification.Name {
+    static let didUpdateCountdown = Notification.Name("didUpdateCountdown")
+}

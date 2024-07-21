@@ -17,7 +17,11 @@ enum DaysOfTheWeek: Int {
     case saturday
 }
 
-struct Course {
+struct Course: Equatable {
+    static func == (lhs: Course, rhs: Course) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
     var id: UUID
     var name: String
     var instructor: String
