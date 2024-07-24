@@ -13,6 +13,9 @@ class ViewController: UIViewController {
     var topLabel = UILabel()
     var currentCourseLabel = UILabel()
     var timeRemaining = UILabel()
+    var noCoursesLeft = UILabel()
+    var classNameCapsule = UIView()
+    var classNameLabel = UILabel()
     
     private var progressRing = ProgressRingView()
 
@@ -45,7 +48,7 @@ extension ViewController {
         centerStackView.alignment = .center
         centerStackView.spacing = 4
         
-        topLabel.text = "Time remaining"
+        topLabel.text = "..."
         topLabel.font = UIFont.preferredFont(forTextStyle: .headline)
         
         centerStackView.addArrangedSubview(topLabel)
@@ -53,12 +56,21 @@ extension ViewController {
         
         
         timeRemaining.font = UIFont.systemFont(ofSize: 35, weight: .black)
+        timeRemaining.isHidden = true
+        timeRemaining.textAlignment = .center
         centerStackView.addArrangedSubview(timeRemaining)
         
         
+        noCoursesLeft.font = UIFont.systemFont(ofSize: 30, weight: .black)
+        noCoursesLeft.numberOfLines = 0
+        noCoursesLeft.textAlignment = .center
+        noCoursesLeft.text = "No courses\nleft today"
+        noCoursesLeft.isHidden = true
+        centerStackView.addArrangedSubview(noCoursesLeft)
         
         currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name
         currentCourseLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+        
         
         //centerStackView.addArrangedSubview(currentCourseLabel)
         
@@ -68,6 +80,18 @@ extension ViewController {
         progressRing.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(progressRing)
+        
+        classNameCapsule.translatesAutoresizingMaskIntoConstraints = false
+        classNameCapsule.layer.cornerRadius = 50/2
+        classNameCapsule.backgroundColor = .secondarySystemBackground
+        classNameCapsule.isHidden = true
+        
+        classNameLabel.translatesAutoresizingMaskIntoConstraints = false
+        classNameLabel.text = "Math"
+        classNameLabel.font = .systemFont(ofSize: 21, weight: .bold)
+        classNameLabel.numberOfLines = 0
+        classNameCapsule.addSubview(classNameLabel)
+        progressRing.addSubview(classNameCapsule)
         
     }
     
@@ -81,6 +105,15 @@ extension ViewController {
                         progressRing.widthAnchor.constraint(equalToConstant: 300),
                         progressRing.heightAnchor.constraint(equalTo: progressRing.widthAnchor),
             centerStackView.centerYAnchor.constraint(equalTo: progressRing.centerYAnchor),
+            
+            classNameCapsule.centerXAnchor.constraint(equalTo: progressRing.centerXAnchor),
+            classNameCapsule.leadingAnchor.constraint(equalTo: classNameLabel.leadingAnchor, constant: -20),
+            classNameCapsule.trailingAnchor.constraint(equalTo: classNameLabel.trailingAnchor, constant: 20),
+            classNameCapsule.heightAnchor.constraint(equalToConstant: 40),
+            classNameCapsule.bottomAnchor.constraint(equalTo: progressRing.bottomAnchor, constant: -50),
+            
+            classNameLabel.centerXAnchor.constraint(equalTo: classNameCapsule.centerXAnchor),
+            classNameLabel.centerYAnchor.constraint(equalTo: classNameCapsule.centerYAnchor),
         ])
     }
     
@@ -117,13 +150,40 @@ extension ViewController {
         DispatchQueue.main.async {
             self.updateProgressRing()
             
-            self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name ?? ""
+            
+//            if let name = CourseViewModel.shared.currentCourse()?.name {
+//                self.classNameCapsule.isHidden = false
+//                //self.classNameLabel.text =
+//                //CourseViewModel.shared.currentCourse()?.name ?? ""
+//            }
+//            else {
+//                self.classNameCapsule.isHidden = true
+//            }
+            
+            
+            
+            
+            
             
             if CourseViewModel.shared.findCurrentOrNextCourseEvent() == nil {
-                self.timeRemaining.text = "No courses left today"
+                self.topLabel.isHidden = true
+                self.currentCourseLabel.isHidden = true
+                self.classNameCapsule.isHidden = true
+                self.timeRemaining.isHidden = true
+                self.noCoursesLeft.isHidden = false
+                
             }
             else {
+                self.topLabel.isHidden = false
+                self.currentCourseLabel.isHidden = false
+                self.classNameCapsule.isHidden = false
+                self.timeRemaining.isHidden = false
+                self.noCoursesLeft.isHidden = true
                 self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(CourseViewModel.shared.currentCourseRemainingTime)
+                if let course = CourseViewModel.shared.findCurrentOrNextCourseEvent() {
+                    self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
+                }
+                self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name ?? ""
             }
             
         }
@@ -163,11 +223,13 @@ extension ViewController: UISheetPresentationControllerDelegate {
                 if identifier == UISheetPresentationController.Detent.Identifier("highDetent") {
                     if let bottomSheetVC = sheetPresentationController.presentedViewController as? BottomSheetViewController {
                                     bottomSheetVC.updateUIForHighDetent()
+                        bottomSheetVC.isFullyShown = true
                                 }
                 }
                 else {
                     if let bottomSheetVC = sheetPresentationController.presentedViewController as? BottomSheetViewController {
                                     bottomSheetVC.updateUIForLowDetent()
+                        bottomSheetVC.isFullyShown = false
                                 }
                 }
             }
@@ -180,6 +242,12 @@ class ProgressRingView: UIView {
     private var progressLayer = CAShapeLayer()
     private var trackLayer = CAShapeLayer()
 
+    var lineWidth = 20 {
+        didSet {
+            setupView()
+        }
+    }
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupView()
@@ -198,7 +266,7 @@ class ProgressRingView: UIView {
     private func createTrackLayer() {
         trackLayer.strokeColor = UIColor.secondarySystemBackground.cgColor
         trackLayer.fillColor = UIColor.clear.cgColor
-        trackLayer.lineWidth = 20.0
+        trackLayer.lineWidth = CGFloat(lineWidth)
         trackLayer.lineCap = .round
         layer.addSublayer(trackLayer)
     }
@@ -206,7 +274,7 @@ class ProgressRingView: UIView {
     private func createProgressLayer() {
         progressLayer.strokeColor = UIColor.systemPink.cgColor
         progressLayer.fillColor = UIColor.clear.cgColor
-        progressLayer.lineWidth = 20.0
+        progressLayer.lineWidth = CGFloat(lineWidth)
         progressLayer.strokeEnd = 0
         progressLayer.lineCap = .round
         layer.addSublayer(progressLayer)
