@@ -13,7 +13,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     let label = UILabel()
     var topSheetView = UIView()
     var tableView = UITableView()
-    var sortedCourses: [Course] = []
+    var sortedCourseBlocks: [(course: Course, block: Block, day: DaysOfTheWeek)] = []
     var blurEffectView = UIView()
     var divider = UIView()
     var plusButton = UIButton()
@@ -43,7 +43,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
         
 
         
-        sortedCourses = CourseViewModel.shared.coursesForToday()
+        sortedCourseBlocks = CourseViewModel.shared.coursesForToday()
         tableView.reloadData()
         self.isModalInPresentation = true
         
@@ -223,7 +223,7 @@ extension BottomSheetViewController {
 
     
     func updateProgressRing() {
-            guard let event = CourseViewModel.shared.findCurrentOrNextCourseEvent() else {
+            guard let event = CourseViewModel.shared.currentOrNextCourse() else {
                 currentCourseProgress.setProgress(to: 0, withAnimation: true)
                 return
             }
@@ -243,14 +243,28 @@ extension BottomSheetViewController {
             let progress = elapsedTime / totalTime
             currentCourseProgress.setProgress(to: CGFloat(progress), withAnimation: true)
         }
+    func areCourseBlocksEqual(_ lhs: [(course: Course, block: Block, day: DaysOfTheWeek)],
+                              _ rhs: [(course: Course, block: Block, day: DaysOfTheWeek)]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        for (index, leftElement) in lhs.enumerated() {
+            let rightElement = rhs[index]
+            if leftElement.course != rightElement.course ||
+               leftElement.block.blockNumber != rightElement.block.blockNumber ||
+               leftElement.day != rightElement.day {
+                return false
+            }
+        }
+        return true
+    }
+
     
     @objc func updateUI(notification: Notification) {
        
         DispatchQueue.main.async {
             self.updateProgressRing()
-            
-            if self.sortedCourses != CourseViewModel.shared.coursesForToday() {
-                self.sortedCourses = CourseViewModel.shared.coursesForToday()
+            let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
+            if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {
+                self.sortedCourseBlocks = sortedCourseBlocksForToday
                 self.tableView.reloadData()
             }
             
@@ -331,33 +345,29 @@ extension BottomSheetViewController: UIScrollViewDelegate {
 
 extension BottomSheetViewController: UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        sortedCourses.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "CourseCell", for: indexPath) as? CourseCell else {
-            return UITableViewCell()
+            return 1
         }
+        
+        func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+            return sortedCourseBlocks.count
+        }
+        
+        func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "CourseCell", for: indexPath) as? CourseCell else {
+                return UITableViewCell()
+            }
             
-        let course = sortedCourses[indexPath.row]
-        cell.configure(with: course)
+            let (course, block, day) = sortedCourseBlocks[indexPath.row]
+            cell.configure(with: course, block: block, day: day)
+            
+            return cell
+        }
         
-        return cell
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        //navigationController?.pushViewController(CourseInfoViewController(), animated: true)
-        
-        //delegate?.openCourseInfoPage()
-        
-        present(CourseInfoViewController(course: sortedCourses[indexPath.row]), animated: true)
-        
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
+        func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+            let (course, block, day) = sortedCourseBlocks[indexPath.row]
+            present(CourseInfoViewController(course: course, block: block, day: day), animated: true)
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
     
     
 }

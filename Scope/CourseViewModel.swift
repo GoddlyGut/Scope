@@ -18,57 +18,154 @@ class CourseViewModel {
         startCountdownTimer()
     }
     
+    var schoolDays: [SchoolDay] = [SchoolDay(date: Date(), isHoliday: false, isHalfDay: false, dayType: .regular)]
     
-    var courses: [Course] = [
-        Course(id: UUID(), name: "English", instructor: "Steve", schedule: CourseSchedule(meetings: [
-            
-            DailyMeeting(day: .friday, startTime: "09:00", endTime: "10:30"),
-            DailyMeeting(day: .tuesday, startTime: "12:20", endTime: "15:30"),
-            DailyMeeting(day: .monday, startTime: "22:59", endTime: "23:04"),
-        ])),
-        Course(id: UUID(), name: "Math", instructor: "James", schedule: CourseSchedule(meetings: [
-            DailyMeeting(day: .friday, startTime: "10:40", endTime: "12:10"),
-            DailyMeeting(day: .tuesday, startTime: "03:40", endTime: "12:10"),
-            DailyMeeting(day: .monday, startTime: "03:40", endTime: "12:10")
-        ])),
-        Course(id: UUID(), name: "Science", instructor: "Ari", schedule: CourseSchedule(meetings: [
-            DailyMeeting(day: .friday, startTime: "17:52", endTime: "18:55")
-        ]))
+    // Define course schedules
+    let courses: [Course] = [
+        Course(id: UUID(), name: "English", instructor: "Steve", schedule: [
+            CourseDaySchedule(day: .monday, scheduleType: .eDay, courseBlocks: [
+                CourseBlock(courseName: "English", blockNumber: 1),
+                CourseBlock(courseName: "English", blockNumber: 2)
+            ]),
+            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+                CourseBlock(courseName: "English", blockNumber: 1)
+            ])
+        ]),
+        Course(id: UUID(), name: "Math", instructor: "James", schedule: [
+            CourseDaySchedule(day: .tuesday, scheduleType: .regular, courseBlocks: [
+                CourseBlock(courseName: "Math", blockNumber: 1),
+                CourseBlock(courseName: "Math", blockNumber: 2),
+                CourseBlock(courseName: "Math", blockNumber: 3)
+            ]),
+            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+                CourseBlock(courseName: "Math", blockNumber: 2)
+            ])
+        ]),
+        Course(id: UUID(), name: "Science", instructor: "Ari", schedule: [
+            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+                CourseBlock(courseName: "Science", blockNumber: 3)
+            ])
+        ])
     ]
 
-    func currentCourse() -> Course? {
-        let now = Date()
-        let currentDay = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: now) - 1)!
+    
+    
+    func isSchoolRunning(on date: Date) -> Bool {
+            guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
+                return false
+            }
+            return !schoolDay.isHoliday
+        }
+        
+        func isHalfDay(on date: Date) -> Bool {
+            guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
+                return false
+            }
+            return schoolDay.isHalfDay
+        }
+    
+    func scheduleType(on date: Date) -> ScheduleType {
+        guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
+            return .regular
+        }
+        return schoolDay.dayType
+    }
+        
+    func coursesForToday(_ date: Date = Date()) -> [(course: Course, block: Block, day: DaysOfTheWeek)] {
+        let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
+        
+        // Check if school is running on the given date
+        guard isSchoolRunning(on: date) else { return [] }
+
+        // Get the dayType for the given date
+        let dayType = self.scheduleType(on: date)
+
+        // Collect all blocks for the given date
+        var blocksForDate: [(course: Course, block: Block, day: DaysOfTheWeek)] = []
+
+        for course in courses {
+            for daySchedule in course.schedule where daySchedule.day == dayOfWeek {
+                let blocks: [Block]
+                switch dayType {
+                case .regular:
+                    blocks = isHalfDay(on: date) ? hDayBlocks : regularDayBlocks
+                case .eDay:
+                    blocks = eDayBlocks
+                case .hDay:
+                    blocks = hDayBlocks
+                case .delayedOpening:
+                    blocks = delayedOpeningBlocks
+                }
+                
+                for courseBlock in daySchedule.courseBlocks {
+                    if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                        blocksForDate.append((course, block, daySchedule.day))
+                    }
+                }
+            }
+        }
+
+        // Sort blocks by start time
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
+        formatter.dateFormat = "HH:mm"
+        blocksForDate.sort { (lhs, rhs) -> Bool in
+            guard let lhsStartTime = formatter.date(from: lhs.block.startTime),
+                  let rhsStartTime = formatter.date(from: rhs.block.startTime) else {
+                return false
+            }
+            return lhsStartTime < rhsStartTime
+        }
+
+        return blocksForDate
+    }
+
+
+    func currentCourse(currentDate: Date = Date()) -> Course? {
+        let now = currentDate
+        let currentDay = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: now) - 1)!
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
         let currentTime = formatter.string(from: now)
         
         for course in courses {
-            for meeting in course.schedule.meetings where meeting.day == currentDay {
-                if currentTime >= meeting.startTime && currentTime <= meeting.endTime {
-                    return course
+            for daySchedule in course.schedule where daySchedule.day == currentDay {
+                // Determine the current schedule type (this example uses .regular for simplicity)
+                let scheduleType = daySchedule.scheduleType
+                
+                // Get the appropriate blocks for the current schedule type
+                let blocks: [Block]
+                switch scheduleType {
+                case .regular:
+                    blocks = regularDayBlocks
+                case .eDay:
+                    blocks = eDayBlocks
+                case .hDay:
+                    blocks = hDayBlocks
+                case .delayedOpening:
+                    blocks = delayedOpeningBlocks
+                }
+                
+                // Check if the current time falls within any of the blocks for this course
+                for courseBlock in daySchedule.courseBlocks {
+                    let block = blocks.first { $0.blockNumber == courseBlock.blockNumber }
+                    
+                    if let block = block {
+                        if currentTime >= block.startTime && currentTime <= block.endTime {
+                            return course
+                        }
+                    }
                 }
             }
         }
         return nil
     }
+
+
     
-    func coursesForToday() -> [Course] {
-        let today = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: Date()) - 1)!
-        
-        let filteredCourses = courses.filter { course in
-                course.schedule.meetings.contains { $0.day == today }
-            }
-        
-        let sortedCourses = filteredCourses.sorted { course1, course2 in
-                let course1Meeting = course1.schedule.meetings.first { $0.day == today }!
-                let course2Meeting = course2.schedule.meetings.first { $0.day == today }!
-                
-                return course1Meeting.startTime < course2Meeting.startTime
-            }
-            
-            return sortedCourses
-    }
+   
+    
+
     
     func createDate(hour: Int, minute: Int) -> Date {
         var components = DateComponents()
@@ -84,7 +181,7 @@ class CourseViewModel {
         }
 
         @objc private func updateCountdown() {
-            guard let nextEvent = findCurrentOrNextCourseEvent() else {
+            guard let nextEvent = currentOrNextCourse() else {
                 currentCourseRemainingTime = 0
                 onCountdownUpdate?()
                 postUpdateNotification()
@@ -120,47 +217,72 @@ class CourseViewModel {
     private func postUpdateNotification() {
         NotificationCenter.default.post(name: .didUpdateCountdown, object: nil)
     }
-    func findCurrentOrNextCourseEvent() -> (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)? {
-        let now = Date()
-        let calendar = Calendar.current
-        let currentDay = DaysOfTheWeek(rawValue: calendar.component(.weekday, from: now) - 1)!
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH:mm"
-        timeFormatter.timeZone = TimeZone.current
+    func combineDateAndTime(date: Date, time: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        let dateString = "\(formatter.string(from: date).prefix(10)) \(time)"
+        return formatter.date(from: dateString)
+    }
 
-        func combineDateAndTime(date: Date, time: String) -> Date? {
-            guard let timeDate = timeFormatter.date(from: time) else { return nil }
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
-            return calendar.date(bySettingHour: timeComponents.hour!, minute: timeComponents.minute!, second: 0, of: date)
+    func currentOrNextCourse(currentDate: Date = Date()) -> (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)? {
+        let now = currentDate
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let currentTime = formatter.string(from: now)
+        
+        var closestEvent: (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)?
+        var shortestTimeDifference: TimeInterval = .greatestFiniteMagnitude
+        
+        // Check if school is running today
+        guard CourseViewModel.shared.isSchoolRunning(on: now) else {
+            return nil
         }
 
-        var closestEvent: (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)?
-        var shortestTimeDifference: TimeInterval = TimeInterval.greatestFiniteMagnitude
-
+        let dayType = CourseViewModel.shared.scheduleType(on: now)
+        let blocks: [Block]
+        switch dayType {
+        case .regular:
+            blocks = CourseViewModel.shared.isHalfDay(on: now) ? hDayBlocks : regularDayBlocks
+        case .eDay:
+            blocks = eDayBlocks
+        case .hDay:
+            blocks = hDayBlocks
+        case .delayedOpening:
+            blocks = delayedOpeningBlocks
+        }
+        
         for course in courses {
-            for meeting in course.schedule.meetings where meeting.day == currentDay {
-                guard let startTime = combineDateAndTime(date: Date(), time: meeting.startTime),
-                      let endTime = combineDateAndTime(date: Date(), time: meeting.endTime) else {
-                    continue
-                }
-
-                if now >= startTime && now <= endTime {
-                    // Current ongoing course
-                    return (course, startTime, endTime, isOngoing: true)
-                } else if startTime > now {
-                    // Next upcoming course
-                    let timeDifference = startTime.timeIntervalSince(now)
-                    if timeDifference < shortestTimeDifference {
-                        shortestTimeDifference = timeDifference
-                        closestEvent = (course, startTime, endTime, isOngoing: false)
+            for daySchedule in course.schedule {
+                if daySchedule.scheduleType == dayType {
+                    for courseBlock in daySchedule.courseBlocks {
+                        if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                            guard let startTime = combineDateAndTime(date: now, time: block.startTime),
+                                  let endTime = combineDateAndTime(date: now, time: block.endTime) else {
+                                continue
+                            }
+                            
+                            if now >= startTime && now <= endTime {
+                                // Current ongoing course
+                                return (course, startTime, endTime, isOngoing: true)
+                            } else if startTime > now {
+                                // Next upcoming course
+                                let timeDifference = startTime.timeIntervalSince(now)
+                                if timeDifference < shortestTimeDifference {
+                                    shortestTimeDifference = timeDifference
+                                    closestEvent = (course, startTime, endTime, isOngoing: false)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-
+        
         return closestEvent
     }
+
+
+
 
 
         func formatTimeInterval(_ interval: TimeInterval) -> String {

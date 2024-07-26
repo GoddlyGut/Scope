@@ -198,7 +198,7 @@ extension ViewController {
             
             
             
-            if CourseViewModel.shared.findCurrentOrNextCourseEvent() == nil {
+            if CourseViewModel.shared.currentOrNextCourse() == nil {
                 self.topLabel.isHidden = true
                 self.currentCourseLabel.isHidden = true
                 self.classNameCapsule.isHidden = true
@@ -214,9 +214,9 @@ extension ViewController {
                 self.classNameCapsule.isHidden = false
                 self.timeRemaining.isHidden = false
                 self.noCoursesLeft.isHidden = true
-                self.classLengthLabel.text = (CourseViewModel.shared.findCurrentOrNextCourseEvent()?.startTime.formattedHMTime() ?? "00:00") + "-" +  (CourseViewModel.shared.findCurrentOrNextCourseEvent()?.endTime.formattedHMTime() ?? "00:00")
+                self.classLengthLabel.text = (CourseViewModel.shared.currentOrNextCourse()?.startTime.formattedHMTime() ?? "00:00") + "-" +  (CourseViewModel.shared.currentOrNextCourse()?.endTime.formattedHMTime() ?? "00:00")
                 self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(CourseViewModel.shared.currentCourseRemainingTime)
-                if let course = CourseViewModel.shared.findCurrentOrNextCourseEvent() {
+                if let course = CourseViewModel.shared.currentOrNextCourse() {
                     self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
                 }
                 self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name ?? ""
@@ -229,7 +229,7 @@ extension ViewController {
     
     
     func updateProgressRing() {
-            guard let event = CourseViewModel.shared.findCurrentOrNextCourseEvent() else {
+            guard let event = CourseViewModel.shared.currentOrNextCourse() else {
                 progressRing.setProgress(to: 0, withAnimation: true)
                 return
             }
