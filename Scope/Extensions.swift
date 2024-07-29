@@ -67,3 +67,21 @@ extension Date {
 extension Notification.Name {
     static let didUpdateCountdown = Notification.Name("didUpdateCountdown")
 }
+
+
+extension Date {
+    func startOfWeek(using calendar: Calendar = Calendar.current) -> Date? {
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: self)
+        return calendar.date(from: components)
+    }
+
+    func endOfWeek(using calendar: Calendar = Calendar.current) -> Date? {
+        guard let startOfWeek = startOfWeek(using: calendar) else { return nil }
+        return calendar.date(byAdding: .day, value: 6, to: startOfWeek)
+    }
+    
+    func isToday() -> Bool {
+        let calendar = Calendar.current
+        return calendar.isDateInToday(self)
+    }
+}

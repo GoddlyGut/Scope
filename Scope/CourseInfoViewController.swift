@@ -3,13 +3,14 @@ import UIKit
 class CourseInfoViewController: UIViewController {
     var course: Course
     var block: Block
-    var day: DaysOfTheWeek
+    var dayType: ScheduleType
     
     let tableView = UITableView()
     
-    var meetingsByDay: [DaysOfTheWeek: [String]] = [:]
-    var sortedDays: [DaysOfTheWeek] = []
-    
+    var meetingsByDay: [(date: Date, dayType: ScheduleType, meetings: [String])] = []
+    var sortedDays: [(date: Date, dayType: ScheduleType)] = []
+
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -33,10 +34,10 @@ class CourseInfoViewController: UIViewController {
         loadData()
     }
     
-    init(course: Course, block: Block, day: DaysOfTheWeek) {
+    init(course: Course, block: Block, dayType: ScheduleType) {
         self.course = course
         self.block = block
-        self.day = day
+        self.dayType = dayType
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -48,28 +49,34 @@ class CourseInfoViewController: UIViewController {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         
-        var meetings: [(day: DaysOfTheWeek, block: Block, startTime: String, endTime: String)] = []
+        let currentWeekSchoolDays = schoolDaysForCurrentWeek()
+        
+        var meetings: [(date: Date, dayType: ScheduleType, block: Block, startTime: String, endTime: String)] = []
         
         for daySchedule in course.schedule {
             let scheduleType = daySchedule.scheduleType
             let blocks: [Block]
             switch scheduleType {
-            case .regular:
-                blocks = regularDayBlocks
             case .eDay:
                 blocks = eDayBlocks
             case .hDay:
                 blocks = hDayBlocks
             case .delayedOpening:
                 blocks = delayedOpeningBlocks
+            default:
+                blocks = regularDayBlocks
             }
             
             for courseBlock in daySchedule.courseBlocks {
                 if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                    meetings.append((day: daySchedule.day, block: block, startTime: block.startTime, endTime: block.endTime))
+                    for schoolDay in currentWeekSchoolDays where schoolDay.dayType == scheduleType {
+                        meetings.append((date: schoolDay.date, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
+                    }
                 }
             }
         }
+        
+        var groupedMeetings: [Date: [ScheduleType: [String]]] = [:]
         
         for meeting in meetings {
             formatter.dateFormat = "HH:mm"
@@ -80,16 +87,45 @@ class CourseInfoViewController: UIViewController {
                 let formattedEndTime = formatter.string(from: endTime)
                 
                 let timeString = "\(formattedStartTime) - \(formattedEndTime) (Block \(meeting.block.blockNumber))"
-                if meetingsByDay[meeting.day] != nil {
-                    meetingsByDay[meeting.day]?.append(timeString)
+                
+                if groupedMeetings[meeting.date] != nil {
+                    if groupedMeetings[meeting.date]![meeting.dayType] != nil {
+                        groupedMeetings[meeting.date]![meeting.dayType]!.append(timeString)
+                    } else {
+                        groupedMeetings[meeting.date]![meeting.dayType] = [timeString]
+                    }
                 } else {
-                    meetingsByDay[meeting.day] = [timeString]
+                    groupedMeetings[meeting.date] = [meeting.dayType: [timeString]]
                 }
             }
         }
         
-        sortedDays = meetingsByDay.keys.sorted { $0.rawValue < $1.rawValue }
+        meetingsByDay = groupedMeetings.flatMap { date, dayMeetings in
+            dayMeetings.map { dayType, meetings in
+                (date: date, dayType: dayType, meetings: meetings)
+            }
+        }
+        
+        sortedDays = meetingsByDay.map { ($0.date, $0.dayType) }
+        sortedDays.sort { lhs, rhs in
+            if lhs.date == rhs.date {
+                return lhs.dayType.rawValue < rhs.dayType.rawValue
+            }
+            return lhs.date < rhs.date
+        }
     }
+
+
+
+    
+    func scheduleDayOfWeek(for dayType: ScheduleType) -> [String] {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            
+        let days = CourseViewModel.shared.schoolDays.filter { $0.dayType == dayType }
+            let dayNames = days.map { formatter.string(from: $0.date) }
+            return dayNames
+        }
 }
 
 extension CourseInfoViewController: UITableViewDataSource {
@@ -98,24 +134,35 @@ extension CourseInfoViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let day = sortedDays[section]
-        return meetingsByDay[day]?.count ?? 0
+        let (date, dayType) = sortedDays[section]
+        return meetingsByDay.first { $0.date == date && $0.dayType == dayType }?.meetings.count ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "MeetingCell", for: indexPath)
-        let day = sortedDays[indexPath.section]
-        if let times = meetingsByDay[day] {
-            cell.textLabel?.text = times[indexPath.row]
+        let (date, dayType) = sortedDays[indexPath.section]
+        if let meetings = meetingsByDay.first(where: { $0.date == date && $0.dayType == dayType })?.meetings {
+            cell.textLabel?.text = meetings[indexPath.row]
         }
         return cell
+    }
+    
+    func schoolDaysForCurrentWeek() -> [SchoolDay] {
+        guard let startOfWeek = Date().startOfWeek(), let endOfWeek = Date().endOfWeek() else {
+            return []
+        }
+        
+        return CourseViewModel.shared.schoolDays.filter { $0.date >= startOfWeek && $0.date <= endOfWeek }
     }
 }
 
 extension CourseInfoViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        let day = sortedDays[section]
-        return "\(day)".capitalized
+        let (date, dayType) = sortedDays[section]
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        let dateString = formatter.string(from: date)
+        return "\(dayType.rawValue) - \(date.isToday() ? "Today" : dateString)"
     }
     
     func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {

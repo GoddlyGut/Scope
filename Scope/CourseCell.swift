@@ -79,7 +79,7 @@ class CourseCell: UITableViewCell {
         ])
     }
 
-    func configure(with course: Course, block: Block, day: DaysOfTheWeek) {
+    func configure(with course: Course, block: Block, dayType: ScheduleType) {
         self.course = course
         courseNameLabel.text = "\(course.name)•Block \(block.blockNumber)"
 

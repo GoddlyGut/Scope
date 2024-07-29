@@ -13,7 +13,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     let label = UILabel()
     var topSheetView = UIView()
     var tableView = UITableView()
-    var sortedCourseBlocks: [(course: Course, block: Block, day: DaysOfTheWeek)] = []
+    var sortedCourseBlocks: [(course: Course, block: Block, dayType: ScheduleType)] = []
     var blurEffectView = UIView()
     var divider = UIView()
     var plusButton = UIButton()
@@ -260,15 +260,15 @@ extension BottomSheetViewController {
     
     @objc func updateUI(notification: Notification) {
        
-        DispatchQueue.main.async {
-            self.updateProgressRing()
-            let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
-            if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {
-                self.sortedCourseBlocks = sortedCourseBlocksForToday
-                self.tableView.reloadData()
-            }
-            
-        }
+//        DispatchQueue.main.async {
+//            self.updateProgressRing()
+//            let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
+//            if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {
+//                self.sortedCourseBlocks = sortedCourseBlocksForToday
+//                self.tableView.reloadData()
+//            }
+//            
+//        }
         
         currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.name ?? "Unknown"
         
@@ -357,15 +357,15 @@ extension BottomSheetViewController: UITableViewDelegate {
                 return UITableViewCell()
             }
             
-            let (course, block, day) = sortedCourseBlocks[indexPath.row]
-            cell.configure(with: course, block: block, day: day)
+            let (course, block, dayType) = sortedCourseBlocks[indexPath.row]
+            cell.configure(with: course, block: block, dayType: dayType)
             
             return cell
         }
         
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-            let (course, block, day) = sortedCourseBlocks[indexPath.row]
-            present(CourseInfoViewController(course: course, block: block, day: day), animated: true)
+            let (course, block, dayType) = sortedCourseBlocks[indexPath.row]
+            present(CourseInfoViewController(course: course, block: block, dayType: dayType), animated: true)
             tableView.deselectRow(at: indexPath, animated: true)
         }
     

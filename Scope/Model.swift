@@ -17,12 +17,20 @@ enum DaysOfTheWeek: Int {
     case saturday
 }
 
-enum ScheduleType {
-    case regular
-    case eDay
-    case hDay
-    case delayedOpening
+enum ScheduleType: String, Comparable {
+    static func < (lhs: ScheduleType, rhs: ScheduleType) -> Bool {
+        return lhs.rawValue < rhs.rawValue
+    }
+    
+    case aDay = "A Day"
+    case bDay = "B Day"
+    case cDay = "C Day"
+    case dDay = "D Day"
+    case eDay = "E Day"
+    case hDay = "H Day"
+    case delayedOpening = "Delayed Opening"
 }
+
 
 struct SchoolDay {
     let date: Date
@@ -30,7 +38,7 @@ struct SchoolDay {
     let isHalfDay: Bool
     let dayType: ScheduleType
     
-    init(date: Date, isHoliday: Bool = false, isHalfDay: Bool = false, dayType: ScheduleType = .regular) {
+    init(date: Date, isHoliday: Bool = false, isHalfDay: Bool = false, dayType: ScheduleType) {
         self.date = date
         self.isHoliday = isHoliday
         self.isHalfDay = isHalfDay
@@ -67,7 +75,6 @@ struct Course: Equatable {
 }
 
 struct CourseDaySchedule {
-    var day: DaysOfTheWeek
     var scheduleType: ScheduleType
     var courseBlocks: [CourseBlock]
 }

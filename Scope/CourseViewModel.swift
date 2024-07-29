@@ -18,32 +18,35 @@ class CourseViewModel {
         startCountdownTimer()
     }
     
-    var schoolDays: [SchoolDay] = [SchoolDay(date: Date(), isHoliday: false, isHalfDay: false, dayType: .regular)]
+    var schoolDays: [SchoolDay] = [SchoolDay(date: Calendar.current.date(byAdding: .day, value: 0, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay), SchoolDay(date: Calendar.current.date(byAdding: .day, value: 1, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay), SchoolDay(date: Calendar.current.date(byAdding: .day, value: 2, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay)]
     
     // Define course schedules
     let courses: [Course] = [
         Course(id: UUID(), name: "English", instructor: "Steve", schedule: [
-            CourseDaySchedule(day: .monday, scheduleType: .eDay, courseBlocks: [
+            CourseDaySchedule(scheduleType: .eDay, courseBlocks: [
                 CourseBlock(courseName: "English", blockNumber: 1),
                 CourseBlock(courseName: "English", blockNumber: 2)
             ]),
-            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
                 CourseBlock(courseName: "English", blockNumber: 1)
             ])
         ]),
         Course(id: UUID(), name: "Math", instructor: "James", schedule: [
-            CourseDaySchedule(day: .tuesday, scheduleType: .regular, courseBlocks: [
+            CourseDaySchedule(scheduleType: .dDay, courseBlocks: [
                 CourseBlock(courseName: "Math", blockNumber: 1),
                 CourseBlock(courseName: "Math", blockNumber: 2),
                 CourseBlock(courseName: "Math", blockNumber: 3)
             ]),
-            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
                 CourseBlock(courseName: "Math", blockNumber: 2)
             ])
         ]),
         Course(id: UUID(), name: "Science", instructor: "Ari", schedule: [
-            CourseDaySchedule(day: .friday, scheduleType: .regular, courseBlocks: [
+            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
                 CourseBlock(courseName: "Science", blockNumber: 3)
+            ]),
+            CourseDaySchedule(scheduleType: .cDay, courseBlocks: [
+                CourseBlock(courseName: "Science", blockNumber: 1)
             ])
         ])
     ]
@@ -64,14 +67,14 @@ class CourseViewModel {
             return schoolDay.isHalfDay
         }
     
-    func scheduleType(on date: Date) -> ScheduleType {
+    func scheduleType(on date: Date) -> ScheduleType? {
         guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
-            return .regular
+            return nil
         }
         return schoolDay.dayType
     }
         
-    func coursesForToday(_ date: Date = Date()) -> [(course: Course, block: Block, day: DaysOfTheWeek)] {
+    func coursesForToday(_ date: Date = Date()) -> [(course: Course, block: Block, dayType: ScheduleType)] {
         let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
         
         // Check if school is running on the given date
@@ -81,25 +84,25 @@ class CourseViewModel {
         let dayType = self.scheduleType(on: date)
 
         // Collect all blocks for the given date
-        var blocksForDate: [(course: Course, block: Block, day: DaysOfTheWeek)] = []
+        var blocksForDate: [(course: Course, block: Block, dayType: ScheduleType)] = []
 
         for course in courses {
-            for daySchedule in course.schedule where daySchedule.day == dayOfWeek {
+            for daySchedule in course.schedule where daySchedule.scheduleType == scheduleType(on: Date()) {
                 let blocks: [Block]
                 switch dayType {
-                case .regular:
-                    blocks = isHalfDay(on: date) ? hDayBlocks : regularDayBlocks
                 case .eDay:
                     blocks = eDayBlocks
                 case .hDay:
                     blocks = hDayBlocks
                 case .delayedOpening:
                     blocks = delayedOpeningBlocks
+                default:
+                    blocks = isHalfDay(on: date) ? hDayBlocks : regularDayBlocks
                 }
                 
                 for courseBlock in daySchedule.courseBlocks {
                     if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                        blocksForDate.append((course, block, daySchedule.day))
+                        blocksForDate.append((course, block, daySchedule.scheduleType))
                     }
                 }
             }
@@ -129,21 +132,21 @@ class CourseViewModel {
         let currentTime = formatter.string(from: now)
         
         for course in courses {
-            for daySchedule in course.schedule where daySchedule.day == currentDay {
+            for daySchedule in course.schedule where daySchedule.scheduleType == scheduleType(on: currentDate) {
                 // Determine the current schedule type (this example uses .regular for simplicity)
                 let scheduleType = daySchedule.scheduleType
                 
                 // Get the appropriate blocks for the current schedule type
                 let blocks: [Block]
                 switch scheduleType {
-                case .regular:
-                    blocks = regularDayBlocks
                 case .eDay:
                     blocks = eDayBlocks
                 case .hDay:
                     blocks = hDayBlocks
                 case .delayedOpening:
                     blocks = delayedOpeningBlocks
+                default:
+                    blocks = regularDayBlocks
                 }
                 
                 // Check if the current time falls within any of the blocks for this course
@@ -241,14 +244,14 @@ class CourseViewModel {
         let dayType = CourseViewModel.shared.scheduleType(on: now)
         let blocks: [Block]
         switch dayType {
-        case .regular:
-            blocks = CourseViewModel.shared.isHalfDay(on: now) ? hDayBlocks : regularDayBlocks
         case .eDay:
             blocks = eDayBlocks
         case .hDay:
             blocks = hDayBlocks
         case .delayedOpening:
             blocks = delayedOpeningBlocks
+        default:
+            blocks = CourseViewModel.shared.isHalfDay(on: now) ? hDayBlocks : regularDayBlocks
         }
         
         for course in courses {
