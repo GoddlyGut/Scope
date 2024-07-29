@@ -14,8 +14,9 @@ class ViewController: UIViewController {
     var currentCourseLabel = UILabel()
     var timeRemaining = UILabel()
     var noCoursesLeft = UILabel()
-    var classNameCapsule = UIView()
+    var classNameCapsule = UIStackView()
     var classNameLabel = UILabel()
+    var classLengthLabel = UILabel()
     
     private var progressRing = ProgressRingView()
 
@@ -36,11 +37,30 @@ class ViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+    
+    override func viewDidLayoutSubviews() {
+        classNameCapsule.layer.cornerRadius = classNameCapsule.frame.height / 2
+    }
 }
 
 extension ViewController {
     func style() {
-        self.title = "Home"
+        
+//        var titleStackView = UIStackView()
+//        titleStackView.axis = .vertical
+//        titleStackView.alignment = .center
+//        
+//        var titleLabel = UILabel()
+//        titleLabel.text = "Math"
+//        titleLabel.font = .systemFont(ofSize: 17, weight: .bold)
+//        titleStackView.addArrangedSubview(titleLabel)
+//        
+//        var subtitleLabel = UILabel()
+//        subtitleLabel.text = "1:00AM-10:00AM"
+//        subtitleLabel.font = .systemFont(ofSize: 15, weight: .regular)
+//        titleStackView.addArrangedSubview(subtitleLabel)
+
+        self.navigationItem.title = ""
         view.backgroundColor = .systemBackground
         
         centerStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -48,7 +68,7 @@ extension ViewController {
         centerStackView.alignment = .center
         centerStackView.spacing = 4
         
-        topLabel.text = "..."
+        topLabel.text = ""
         topLabel.font = UIFont.preferredFont(forTextStyle: .headline)
         
         centerStackView.addArrangedSubview(topLabel)
@@ -82,15 +102,23 @@ extension ViewController {
         view.addSubview(progressRing)
         
         classNameCapsule.translatesAutoresizingMaskIntoConstraints = false
-        classNameCapsule.layer.cornerRadius = 50/2
-        classNameCapsule.backgroundColor = .secondarySystemBackground
+
+        classNameCapsule.axis = .vertical
+        classNameCapsule.alignment = .center
         classNameCapsule.isHidden = true
+        classNameCapsule.backgroundColor = .secondarySystemBackground
+        
         
         classNameLabel.translatesAutoresizingMaskIntoConstraints = false
         classNameLabel.text = "Math"
         classNameLabel.font = .systemFont(ofSize: 21, weight: .bold)
-        classNameLabel.numberOfLines = 0
-        classNameCapsule.addSubview(classNameLabel)
+        //classNameCapsule.addArrangedSubview(classNameLabel)
+        
+        classLengthLabel.translatesAutoresizingMaskIntoConstraints = false
+        classLengthLabel.text = "1:00AM-10:00AM"
+        classLengthLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
+        classNameCapsule.addArrangedSubview(classLengthLabel)
+        
         progressRing.addSubview(classNameCapsule)
         
     }
@@ -107,30 +135,30 @@ extension ViewController {
             centerStackView.centerYAnchor.constraint(equalTo: progressRing.centerYAnchor),
             
             classNameCapsule.centerXAnchor.constraint(equalTo: progressRing.centerXAnchor),
-            classNameCapsule.leadingAnchor.constraint(equalTo: classNameLabel.leadingAnchor, constant: -20),
-            classNameCapsule.trailingAnchor.constraint(equalTo: classNameLabel.trailingAnchor, constant: 20),
-            classNameCapsule.heightAnchor.constraint(equalToConstant: 40),
-            classNameCapsule.bottomAnchor.constraint(equalTo: progressRing.bottomAnchor, constant: -50),
+            classNameCapsule.leadingAnchor.constraint(equalTo: classLengthLabel.leadingAnchor, constant: -13),
+            classNameCapsule.trailingAnchor.constraint(equalTo: classLengthLabel.trailingAnchor, constant: 13),
+            classNameCapsule.topAnchor.constraint(equalTo: centerStackView.bottomAnchor, constant: 15),
+            classNameCapsule.heightAnchor.constraint(equalToConstant: 25),
             
-            classNameLabel.centerXAnchor.constraint(equalTo: classNameCapsule.centerXAnchor),
-            classNameLabel.centerYAnchor.constraint(equalTo: classNameCapsule.centerYAnchor),
+            
         ])
     }
     
     @objc private func presentSheet() {
         let sheetViewController = BottomSheetViewController()
             //sheetViewController.modalPresentationStyle = .pageSheet
-            
+        sheetViewController.delegate = self
             
             if let sheet = sheetViewController.sheetPresentationController {
                 
                 let customHighDetent = UISheetPresentationController.Detent.custom(identifier: UISheetPresentationController.Detent.Identifier("highDetent")) { context in
-                    return context.maximumDetentValue - 0.5
+                    return context.maximumDetentValue - 0.2
                 }
                 
                 let customLowDetent = UISheetPresentationController.Detent.custom(identifier: UISheetPresentationController.Detent.Identifier("lowDetent")) { context in
-                    return context.maximumDetentValue * 0.45
+                    return self.view.frame.height * 0.37
                 }
+
                 
                 sheet.detents = [customLowDetent, customHighDetent]
                 sheet.prefersGrabberVisible = true
@@ -139,10 +167,15 @@ extension ViewController {
                 sheet.widthFollowsPreferredContentSizeWhenEdgeAttached = true
                 sheet.largestUndimmedDetentIdentifier = customHighDetent.identifier
                 sheet.delegate = self
+                
+               
             }
-            
+        
             present(sheetViewController, animated: true, completion: nil)
         }
+    
+    
+    
     
     @objc func updateUI(notification: Notification) {
        
@@ -171,19 +204,23 @@ extension ViewController {
                 self.classNameCapsule.isHidden = true
                 self.timeRemaining.isHidden = true
                 self.noCoursesLeft.isHidden = false
+                self.navigationItem.title = "No class"
                 
             }
             else {
+                
                 self.topLabel.isHidden = false
                 self.currentCourseLabel.isHidden = false
                 self.classNameCapsule.isHidden = false
                 self.timeRemaining.isHidden = false
                 self.noCoursesLeft.isHidden = true
+                self.classLengthLabel.text = (CourseViewModel.shared.findCurrentOrNextCourseEvent()?.startTime.formattedHMTime() ?? "00:00") + "-" +  (CourseViewModel.shared.findCurrentOrNextCourseEvent()?.endTime.formattedHMTime() ?? "00:00")
                 self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(CourseViewModel.shared.currentCourseRemainingTime)
                 if let course = CourseViewModel.shared.findCurrentOrNextCourseEvent() {
                     self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
                 }
                 self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name ?? ""
+                self.navigationItem.title = CourseViewModel.shared.currentCourse()?.name ?? ""
             }
             
         }
@@ -234,6 +271,14 @@ extension ViewController: UISheetPresentationControllerDelegate {
                 }
             }
         }
+}
+
+extension ViewController: BottomSheetDelegate {
+    func openCourseInfoPage() {
+        
+    }
+    
+    
 }
 
 

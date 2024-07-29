@@ -18,6 +18,8 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     var divider = UIView()
     var plusButton = UIButton()
     
+    var delegate: BottomSheetDelegate?
+    
 
     var currentCourseStackView = UIStackView()
     
@@ -27,10 +29,10 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     var clockImageView = UIButton()
     var currentCourseProgress = ProgressRingView()
     var currentCourseNameLabel = UILabel()
-    var currentCoursePercentDone = UILabel()
-    var totalProgressBar = UIView()
-    var totalProgressLabel = UILabel()
     var isFullyShown = false
+    
+    var stackViewHeight: CGFloat = 45.0
+    var topSheetHeight: CGFloat = 70.0
     
     
     override func viewDidLoad() {
@@ -55,7 +57,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     }
     
     override func viewDidLayoutSubviews() {
-        totalProgressBar.layer.cornerRadius = totalProgressBar.frame.height / 2
+       // totalProgressBar.layer.cornerRadius = totalProgressBar.frame.height / 2
        
         
     }
@@ -67,7 +69,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
 
 extension BottomSheetViewController {
     func style() {
-        self.title = "Schedule"
+
         view.backgroundColor = .systemBackground
         
         
@@ -88,15 +90,9 @@ extension BottomSheetViewController {
         topSheetView.addSubview(currentCourseStackView)
         
         
-        totalProgressBar.translatesAutoresizingMaskIntoConstraints = false
-        totalProgressBar.backgroundColor = .secondarySystemFill
-        topSheetView.addSubview(totalProgressBar)
+      
         
-        totalProgressLabel.translatesAutoresizingMaskIntoConstraints = false
-        totalProgressLabel.text = "50% Done"
-        totalProgressLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        totalProgressLabel.textColor = .white
-        view.addSubview(totalProgressLabel)
+        
         
         currentCourseProgress.translatesAutoresizingMaskIntoConstraints = false
         currentCourseProgress.lineWidth = 5
@@ -132,11 +128,7 @@ extension BottomSheetViewController {
         
         currentCourseStackView.addArrangedSubview(currentCourseVerticalStackView)
         
-        currentCoursePercentDone.translatesAutoresizingMaskIntoConstraints = false
-        currentCoursePercentDone.font = .systemFont(ofSize: 20, weight: .semibold)
-        currentCoursePercentDone.text = "50% 😵‍💫"
-        
-        topSheetView.addSubview(currentCoursePercentDone)
+     
         
         //currentCourseStackView.addArrangedSubview(currentCourseIcon)
         
@@ -186,12 +178,12 @@ extension BottomSheetViewController {
             stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            stackView.heightAnchor.constraint(equalToConstant: 45),
+            stackView.heightAnchor.constraint(equalToConstant: stackViewHeight),
             
             topSheetView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                         topSheetView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
                         topSheetView.topAnchor.constraint(equalTo: stackView.bottomAnchor),
-                        topSheetView.heightAnchor.constraint(equalToConstant: 100),
+                        topSheetView.heightAnchor.constraint(equalToConstant: topSheetHeight),
                         
             
             
@@ -209,16 +201,7 @@ extension BottomSheetViewController {
             currentCourseStackView.topAnchor.constraint(equalTo: topSheetView.topAnchor, constant: 10),
             
             
-            
-            totalProgressBar.leadingAnchor.constraint(equalTo: topSheetView.leadingAnchor, constant: 15),
-            totalProgressBar.bottomAnchor.constraint(equalTo: topSheetView.bottomAnchor, constant: -15),
-            totalProgressBar.trailingAnchor.constraint(equalTo: topSheetView.trailingAnchor, constant: -15),
-            totalProgressBar.heightAnchor.constraint(equalToConstant: 15),
-            
-            totalProgressLabel.bottomAnchor.constraint(equalTo: totalProgressBar.topAnchor, constant: 3),
-            totalProgressLabel.trailingAnchor.constraint(equalTo: totalProgressBar.trailingAnchor, constant: 3),
-            totalProgressLabel.leadingAnchor.constraint(equalTo: totalProgressBar.centerXAnchor),
-            totalProgressLabel.heightAnchor.constraint(equalToConstant: 10),
+    
             
         
             
@@ -232,18 +215,40 @@ extension BottomSheetViewController {
             
             clockImageView.widthAnchor.constraint(equalToConstant: 20),
             clockImageView.heightAnchor.constraint(equalToConstant: 20),
-            
-            currentCoursePercentDone.trailingAnchor.constraint(equalTo: topSheetView.trailingAnchor, constant: -20),
-            currentCoursePercentDone.centerYAnchor.constraint(equalTo: currentCourseStackView.centerYAnchor),
+          
         ])
         
         
     }
 
     
+    func updateProgressRing() {
+            guard let event = CourseViewModel.shared.findCurrentOrNextCourseEvent() else {
+                currentCourseProgress.setProgress(to: 0, withAnimation: true)
+                return
+            }
+            
+            let now = Date()
+            let totalTime: TimeInterval
+            let elapsedTime: TimeInterval
+            
+            if event.isOngoing {
+                totalTime = event.endTime.timeIntervalSince(event.startTime)
+                elapsedTime = now.timeIntervalSince(event.startTime)
+            } else {
+                totalTime = event.startTime.timeIntervalSince(now)
+                elapsedTime = 0
+            }
+            
+            let progress = elapsedTime / totalTime
+            currentCourseProgress.setProgress(to: CGFloat(progress), withAnimation: true)
+        }
+    
     @objc func updateUI(notification: Notification) {
        
         DispatchQueue.main.async {
+            self.updateProgressRing()
+            
             if self.sortedCourses != CourseViewModel.shared.coursesForToday() {
                 self.sortedCourses = CourseViewModel.shared.coursesForToday()
                 self.tableView.reloadData()
@@ -251,12 +256,14 @@ extension BottomSheetViewController {
             
         }
         
+        currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.name ?? "Unknown"
+        
          
         if CourseViewModel.shared.currentCourse() == nil {
-            if self.topSheetView.transform.ty != -200 {
+            if self.topSheetView.transform.ty != -topSheetHeight {
                 UIView.animate(withDuration: 0.15) {
-                    self.topSheetView.transform.ty = -70
-                    self.tableView.contentInset.top = 75
+                    self.topSheetView.transform.ty = -self.topSheetHeight
+                    self.tableView.contentInset.top = self.stackViewHeight
                 }
             }
             
@@ -266,7 +273,7 @@ extension BottomSheetViewController {
             if self.topSheetView.transform.ty != 0 && isFullyShown {
                 UIView.animate(withDuration: 0.2) {
                     self.topSheetView.transform.ty = 0
-                    self.tableView.contentInset.top = 145
+                    self.tableView.contentInset.top = 115
                 }
             }
         }
@@ -282,7 +289,7 @@ extension BottomSheetViewController {
             UIView.animate(withDuration: 0.2) {
                 self.topSheetView.transform.ty = 0
                 
-                self.tableView.contentInset.top = 145
+                self.tableView.contentInset.top = self.topSheetHeight + self.stackViewHeight
             }
         }
     }
@@ -291,12 +298,10 @@ extension BottomSheetViewController {
 //            
 //            topSheetView.layer.anchorPoint = CGPoint(x: 0.5, y: 1)
 //            topSheetView.frame.origin.y += topSheetView.frame.height / 2
-            UIView.animate(withDuration: 0.15, animations: {
-                self.topSheetView.transform.ty = -70
-                self.tableView.contentInset.top = 75
-            }, completion: { completed in
-                
-            })
+            UIView.animate(withDuration: 0.15) {
+                self.topSheetView.transform.ty = -self.topSheetHeight
+                self.tableView.contentInset.top = self.stackViewHeight
+            }
              
         }
 }
@@ -343,6 +348,18 @@ extension BottomSheetViewController: UITableViewDelegate {
         
         return cell
     }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        //navigationController?.pushViewController(CourseInfoViewController(), animated: true)
+        
+        //delegate?.openCourseInfoPage()
+        
+        present(CourseInfoViewController(course: sortedCourses[indexPath.row]), animated: true)
+        
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    
 }
 
 

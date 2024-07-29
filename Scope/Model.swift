@@ -17,6 +17,30 @@ enum DaysOfTheWeek: Int {
     case saturday
 }
 
+enum ScheduleType {
+    case regular
+    case eDay
+    case hDay
+    case delayedOpening
+}
+
+struct Block {
+    var blockNumber: Int
+    var startTime: String
+    var endTime: String
+}
+
+struct DaySchedule {
+    var day: DaysOfTheWeek
+    var scheduleType: ScheduleType
+    var blocks: [Block]
+}
+
+struct CourseBlock {
+    var course: Course
+    var blockNumber: Int
+}
+
 struct Course: Equatable {
     static func == (lhs: Course, rhs: Course) -> Bool {
         return lhs.id == rhs.id

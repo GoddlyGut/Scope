@@ -8,19 +8,38 @@
 import UIKit
 
 class CourseCell: UITableViewCell {
+    var course: Course?
     let courseNameLabel = UILabel()
     let courseTimingLabel = UILabel()
+    
+    var greenDotView = UIView()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupViews()
         layout()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCountdown, object: nil)
     }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupViews()
         layout()
+    }
+    
+    @objc func updateUI(notification: Notification) {
+        if CourseViewModel.shared.currentCourse() == course {
+            greenDotView.isHidden = false
+        }
+        else {
+            greenDotView.isHidden = true
+        }
     }
     
     private func setupViews() {
@@ -30,31 +49,46 @@ class CourseCell: UITableViewCell {
         contentView.addSubview(courseNameLabel)
         contentView.addSubview(courseTimingLabel)
         
-        courseNameLabel.font = UIFont.preferredFont(forTextStyle: .title1)
+        
+        courseNameLabel.font = .systemFont(ofSize: 24, weight: .semibold)
         courseTimingLabel.font = UIFont.preferredFont(forTextStyle: .subheadline)
         courseTimingLabel.textColor = .gray
+        
+        greenDotView.translatesAutoresizingMaskIntoConstraints = false
+        greenDotView.backgroundColor = .systemGreen
+        greenDotView.isHidden = true
+        greenDotView.layer.cornerRadius = 10 / 2
+        contentView.addSubview(greenDotView)
     }
     
     private func layout() {
         NSLayoutConstraint.activate([
             courseNameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            courseNameLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            courseNameLabel.trailingAnchor.constraint(equalTo: greenDotView.leadingAnchor, constant: -16), // Adjusting to leave space for the green dot
             courseNameLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             
             courseTimingLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            courseTimingLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            courseTimingLabel.trailingAnchor.constraint(equalTo: greenDotView.leadingAnchor, constant: -16), // Adjusting to leave space for the green dot
             courseTimingLabel.topAnchor.constraint(equalTo: courseNameLabel.bottomAnchor, constant: 4),
-            courseTimingLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
+            courseTimingLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            
+            greenDotView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            greenDotView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16), // Make sure it's inside the content view
+            greenDotView.heightAnchor.constraint(equalToConstant: 10),
+            greenDotView.widthAnchor.constraint(equalTo: greenDotView.heightAnchor) // Make it a circle
         ])
     }
+
     
     func configure(with course: Course) {
+        self.course = course
         courseNameLabel.text = course.name
 
         // Determine today's day of the week
         let calendar = Calendar.current
         let today = DaysOfTheWeek(rawValue: calendar.component(.weekday, from: Date()) - 1)!
 
+        
         // Formatter to convert 24-hour time to 12-hour time with AM/PM
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -74,6 +108,10 @@ class CourseCell: UITableViewCell {
                 isMeetingFound = true
                 break  // Assuming you only want to display the first matching meeting today
             }
+        }
+        
+        if CourseViewModel.shared.currentCourse() == course {
+            greenDotView.isHidden = false
         }
 
         // Handle cases where no meeting is found for today

@@ -18,20 +18,21 @@ class CourseViewModel {
         startCountdownTimer()
     }
     
+    
     var courses: [Course] = [
         Course(id: UUID(), name: "English", instructor: "Steve", schedule: CourseSchedule(meetings: [
             
-            DailyMeeting(day: .wednesday, startTime: "09:00", endTime: "10:30"),
+            DailyMeeting(day: .friday, startTime: "09:00", endTime: "10:30"),
             DailyMeeting(day: .tuesday, startTime: "12:20", endTime: "15:30"),
             DailyMeeting(day: .monday, startTime: "22:59", endTime: "23:04"),
         ])),
         Course(id: UUID(), name: "Math", instructor: "James", schedule: CourseSchedule(meetings: [
-            DailyMeeting(day: .wednesday, startTime: "10:40", endTime: "12:10"),
+            DailyMeeting(day: .friday, startTime: "10:40", endTime: "12:10"),
             DailyMeeting(day: .tuesday, startTime: "03:40", endTime: "12:10"),
             DailyMeeting(day: .monday, startTime: "03:40", endTime: "12:10")
         ])),
         Course(id: UUID(), name: "Science", instructor: "Ari", schedule: CourseSchedule(meetings: [
-            DailyMeeting(day: .monday, startTime: "17:52", endTime: "18:55")
+            DailyMeeting(day: .friday, startTime: "17:52", endTime: "18:55")
         ]))
     ]
 
