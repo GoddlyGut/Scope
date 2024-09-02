@@ -119,7 +119,7 @@ extension BottomSheetViewController {
         currentCourseVerticalStackView.addArrangedSubview(currentCourseLabel)
         
         currentCourseNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.name ?? "Unknown"
+        currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? "Unknown"
         currentCourseNameLabel.font = .systemFont(ofSize: 20, weight: .semibold)
         
         
@@ -149,7 +149,9 @@ extension BottomSheetViewController {
         stackView.addArrangedSubview(label)
         
         plusButton.tintColor = .pink
-        plusButton.setImage(UIImage(systemName: "plus")?.withRenderingMode(.alwaysTemplate), for: .normal)
+        
+        plusButton.setImage(UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
+        plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
         stackView.addArrangedSubview(plusButton)
  
         
@@ -220,6 +222,12 @@ extension BottomSheetViewController {
         
         
     }
+    
+    @objc func createNewCourse() {
+        let vc = FullCourseListViewController()
+        //vc.modalPresentationStyle = .fullScreen
+        present(UINavigationController(rootViewController: vc), animated: true)
+    }
 
     
     func updateProgressRing() {
@@ -243,14 +251,14 @@ extension BottomSheetViewController {
             let progress = elapsedTime / totalTime
             currentCourseProgress.setProgress(to: CGFloat(progress), withAnimation: true)
         }
-    func areCourseBlocksEqual(_ lhs: [(course: Course, block: Block, day: DaysOfTheWeek)],
-                              _ rhs: [(course: Course, block: Block, day: DaysOfTheWeek)]) -> Bool {
+    func areCourseBlocksEqual(_ lhs: [(course: Course, block: Block, dayType: ScheduleType)],
+                              _ rhs: [(course: Course, block: Block, dayType: ScheduleType)]) -> Bool {
         guard lhs.count == rhs.count else { return false }
         for (index, leftElement) in lhs.enumerated() {
             let rightElement = rhs[index]
             if leftElement.course != rightElement.course ||
                leftElement.block.blockNumber != rightElement.block.blockNumber ||
-               leftElement.day != rightElement.day {
+                leftElement.dayType != rightElement.dayType {
                 return false
             }
         }
@@ -260,17 +268,17 @@ extension BottomSheetViewController {
     
     @objc func updateUI(notification: Notification) {
        
-//        DispatchQueue.main.async {
-//            self.updateProgressRing()
-//            let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
-//            if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {
-//                self.sortedCourseBlocks = sortedCourseBlocksForToday
-//                self.tableView.reloadData()
-//            }
-//            
-//        }
+        DispatchQueue.main.async {
+            self.updateProgressRing()
+            let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
+            if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {
+                self.sortedCourseBlocks = sortedCourseBlocksForToday
+                self.tableView.reloadData()
+            }
+            
+        }
         
-        currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.name ?? "Unknown"
+        currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? "Unknown"
         
          
         if CourseViewModel.shared.currentCourse() == nil {
@@ -365,7 +373,7 @@ extension BottomSheetViewController: UITableViewDelegate {
         
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
             let (course, block, dayType) = sortedCourseBlocks[indexPath.row]
-            present(CourseInfoViewController(course: course, block: block, dayType: dayType), animated: true)
+            present(UINavigationController(rootViewController: CourseInfoViewController(course: course, block: block, dayType: dayType)), animated: true)
             tableView.deselectRow(at: indexPath, animated: true)
         }
     

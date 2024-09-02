@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CloudKit
 
 class CourseViewModel {
     static var shared = CourseViewModel()
@@ -13,44 +14,61 @@ class CourseViewModel {
     var onCountdownUpdate: (() -> Void)?
     var currentCourseRemainingTime = 0.0
     var isCurrentCourseOngoing = false
-    
+    private let publicDatabase = CKContainer.default().privateCloudDatabase
     init() {
         startCountdownTimer()
+        loadData()
     }
     
-    var schoolDays: [SchoolDay] = [SchoolDay(date: Calendar.current.date(byAdding: .day, value: 0, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay), SchoolDay(date: Calendar.current.date(byAdding: .day, value: 1, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay), SchoolDay(date: Calendar.current.date(byAdding: .day, value: 2, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay)]
-    
-    // Define course schedules
-    let courses: [Course] = [
-        Course(id: UUID(), name: "English", instructor: "Steve", schedule: [
-            CourseDaySchedule(scheduleType: .eDay, courseBlocks: [
-                CourseBlock(courseName: "English", blockNumber: 1),
-                CourseBlock(courseName: "English", blockNumber: 2)
-            ]),
-            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
-                CourseBlock(courseName: "English", blockNumber: 1)
-            ])
-        ]),
-        Course(id: UUID(), name: "Math", instructor: "James", schedule: [
-            CourseDaySchedule(scheduleType: .dDay, courseBlocks: [
-                CourseBlock(courseName: "Math", blockNumber: 1),
-                CourseBlock(courseName: "Math", blockNumber: 2),
-                CourseBlock(courseName: "Math", blockNumber: 3)
-            ]),
-            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
-                CourseBlock(courseName: "Math", blockNumber: 2)
-            ])
-        ]),
-        Course(id: UUID(), name: "Science", instructor: "Ari", schedule: [
-            CourseDaySchedule(scheduleType: .aDay, courseBlocks: [
-                CourseBlock(courseName: "Science", blockNumber: 3)
-            ]),
-            CourseDaySchedule(scheduleType: .cDay, courseBlocks: [
-                CourseBlock(courseName: "Science", blockNumber: 1)
-            ])
-        ])
+    var schoolDays: [SchoolDay] = [
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .eDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 0, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 1, to: Date())!, isHoliday: false, isHalfDay: true, dayType: .eDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 2, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .hDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 3, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .bDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 4, to: Date())!, isHoliday: false, isHalfDay: true, dayType: .cDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 5, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay),
+        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 6, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay)
     ]
+     {
+        didSet {
+            saveData()
+        }
+    }
+    
+    func saveData() {
+        do {
+            let coursesData = try JSONEncoder().encode(courses)
+            let schoolDaysData = try JSONEncoder().encode(schoolDays)
+            
+            UserDefaults.standard.set(coursesData, forKey: "courses")
+            UserDefaults.standard.set(schoolDaysData, forKey: "schoolDays")
+            
+        } catch {
+            print("Failed to save data: \(error)")
+        }
+    }
+    
+    func loadData() {
+        if let coursesData = UserDefaults.standard.data(forKey: "courses"),
+           let schoolDaysData = UserDefaults.standard.data(forKey: "schoolDays") {
+            do {
+                courses = try JSONDecoder().decode([Course].self, from: coursesData)
+                schoolDays = try JSONDecoder().decode([SchoolDay].self, from: schoolDaysData)
+            } catch {
+                print("Failed to load data: \(error)")
+            }
+        }
+    }
+    
+    var courses: [Course] = [] {
+        didSet {
+            NotificationCenter.default.post(name: .didUpdateCourseList, object: nil)
+            saveData()
+        }
+    }
 
+    
     
     
     func isSchoolRunning(on date: Date) -> Bool {
@@ -122,18 +140,23 @@ class CourseViewModel {
         return blocksForDate
     }
 
-
-    func currentCourse(currentDate: Date = Date()) -> Course? {
+    func currentCourse(currentDate: Date = Date()) -> (course: Course, block: Block)? {
         let now = currentDate
         let currentDay = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: now) - 1)!
         
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
+        
+        // Get the current time as a Date object
         let currentTime = formatter.string(from: now)
+        guard let currentDateTime = formatter.date(from: currentTime) else {
+            print("Error converting current time to Date object")
+            return nil
+        }
         
         for course in courses {
             for daySchedule in course.schedule where daySchedule.scheduleType == scheduleType(on: currentDate) {
-                // Determine the current schedule type (this example uses .regular for simplicity)
+                // Determine the current schedule type
                 let scheduleType = daySchedule.scheduleType
                 
                 // Get the appropriate blocks for the current schedule type
@@ -151,11 +174,18 @@ class CourseViewModel {
                 
                 // Check if the current time falls within any of the blocks for this course
                 for courseBlock in daySchedule.courseBlocks {
-                    let block = blocks.first { $0.blockNumber == courseBlock.blockNumber }
-                    
-                    if let block = block {
-                        if currentTime >= block.startTime && currentTime <= block.endTime {
-                            return course
+                    if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                        // Convert block start and end times to Date objects
+                        if let blockStartTime = formatter.date(from: block.startTime),
+                           let blockEndTime = formatter.date(from: block.endTime) {
+                            // Logging for debugging
+                            
+                            
+                            if currentDateTime >= blockStartTime && currentDateTime <= blockEndTime {
+                                return (course, block)
+                            }
+                        } else {
+                            print("Error converting block start or end time to Date object")
                         }
                     }
                 }

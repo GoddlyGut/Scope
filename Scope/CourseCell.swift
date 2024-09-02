@@ -8,7 +8,7 @@
 import UIKit
 
 class CourseCell: UITableViewCell {
-    var course: Course?
+    var course: (course: Course, block: Block)?
     let courseNameLabel = UILabel()
     let courseTimingLabel = UILabel()
     
@@ -34,10 +34,14 @@ class CourseCell: UITableViewCell {
     }
     
     @objc func updateUI(notification: Notification) {
-        if CourseViewModel.shared.currentCourse() == course {
-            greenDotView.isHidden = false
-        }
-        else {
+        if let currentCourse = CourseViewModel.shared.currentCourse(), currentCourse.course == course?.course {
+            if course?.block.blockNumber == CourseViewModel.shared.currentCourse()?.block.blockNumber {
+                greenDotView.isHidden = false
+            }
+            else {
+                greenDotView.isHidden = true
+            }
+        } else {
             greenDotView.isHidden = true
         }
     }
@@ -55,10 +59,12 @@ class CourseCell: UITableViewCell {
         courseTimingLabel.textColor = .gray
         
         greenDotView.translatesAutoresizingMaskIntoConstraints = false
-        greenDotView.backgroundColor = .systemGreen
+        greenDotView.backgroundColor = .pink
         greenDotView.isHidden = true
         greenDotView.layer.cornerRadius = 10 / 2
         contentView.addSubview(greenDotView)
+        
+       
     }
     
     private func layout() {
@@ -80,8 +86,8 @@ class CourseCell: UITableViewCell {
     }
 
     func configure(with course: Course, block: Block, dayType: ScheduleType) {
-        self.course = course
-        courseNameLabel.text = "\(course.name)•Block \(block.blockNumber)"
+        self.course = (course, block)
+        courseNameLabel.text = "\(course.name)"
 
         // Formatter to convert 24-hour time to 12-hour time with AM/PM
         let formatter = DateFormatter()
@@ -100,11 +106,16 @@ class CourseCell: UITableViewCell {
         let formattedEndTime = formatter.string(from: endTime)
         
         // Set the label text with the formatted timing
-        courseTimingLabel.text = "\(formattedStartTime) - \(formattedEndTime)"
+        courseTimingLabel.text = "\(formattedStartTime) - \(formattedEndTime) • Block \(block.blockNumber)"
 
         // Determine if this course is the current course
-        if let currentCourse = CourseViewModel.shared.currentCourse(), currentCourse == course {
-            greenDotView.isHidden = false
+        if let currentCourse = CourseViewModel.shared.currentCourse(), currentCourse.course == course {
+            if block.blockNumber == CourseViewModel.shared.currentCourse()?.block.blockNumber {
+                greenDotView.isHidden = false
+            }
+            else {
+                greenDotView.isHidden = true
+            }
         } else {
             greenDotView.isHidden = true
         }

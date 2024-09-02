@@ -75,20 +75,20 @@ extension ViewController {
         
         
         
-        timeRemaining.font = UIFont.systemFont(ofSize: 35, weight: .black)
+        timeRemaining.font = UIFont.systemFont(ofSize: 40, weight: .black)
         timeRemaining.isHidden = true
         timeRemaining.textAlignment = .center
         centerStackView.addArrangedSubview(timeRemaining)
         
         
-        noCoursesLeft.font = UIFont.systemFont(ofSize: 30, weight: .black)
+        noCoursesLeft.font = UIFont.systemFont(ofSize: 33, weight: .black)
         noCoursesLeft.numberOfLines = 0
         noCoursesLeft.textAlignment = .center
         noCoursesLeft.text = "No courses\nleft today"
         noCoursesLeft.isHidden = true
         centerStackView.addArrangedSubview(noCoursesLeft)
         
-        currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name
+        currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.course.name
         currentCourseLabel.font = UIFont.preferredFont(forTextStyle: .headline)
         
         
@@ -130,7 +130,7 @@ extension ViewController {
             
             progressRing.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 30),
                         progressRing.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                        progressRing.widthAnchor.constraint(equalToConstant: 300),
+            progressRing.widthAnchor.constraint(equalToConstant: view.frame.width * 0.8),
                         progressRing.heightAnchor.constraint(equalTo: progressRing.widthAnchor),
             centerStackView.centerYAnchor.constraint(equalTo: progressRing.centerYAnchor),
             
@@ -152,7 +152,7 @@ extension ViewController {
             if let sheet = sheetViewController.sheetPresentationController {
                 
                 let customHighDetent = UISheetPresentationController.Detent.custom(identifier: UISheetPresentationController.Detent.Identifier("highDetent")) { context in
-                    return context.maximumDetentValue - 0.2
+                    return context.maximumDetentValue - 0.3
                 }
                 
                 let customLowDetent = UISheetPresentationController.Detent.custom(identifier: UISheetPresentationController.Detent.Identifier("lowDetent")) { context in
@@ -219,8 +219,8 @@ extension ViewController {
                 if let course = CourseViewModel.shared.currentOrNextCourse() {
                     self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
                 }
-                self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.name ?? ""
-                self.navigationItem.title = CourseViewModel.shared.currentCourse()?.name ?? ""
+                self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? ""
+                self.navigationItem.title = CourseViewModel.shared.currentCourse()?.course.name ?? ""
             }
             
         }
@@ -287,7 +287,7 @@ class ProgressRingView: UIView {
     private var progressLayer = CAShapeLayer()
     private var trackLayer = CAShapeLayer()
 
-    var lineWidth = 20 {
+    var lineWidth = 22 {
         didSet {
             setupView()
         }

@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import CloudKit
 
-enum DaysOfTheWeek: Int {
+enum DaysOfTheWeek: Int, Codable {
     case sunday = 0
     case monday
     case tuesday
@@ -17,7 +18,7 @@ enum DaysOfTheWeek: Int {
     case saturday
 }
 
-enum ScheduleType: String, Comparable {
+enum ScheduleType: String, Comparable, CaseIterable, Codable {
     static func < (lhs: ScheduleType, rhs: ScheduleType) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }
@@ -29,10 +30,11 @@ enum ScheduleType: String, Comparable {
     case eDay = "E Day"
     case hDay = "H Day"
     case delayedOpening = "Delayed Opening"
+    case none
 }
 
 
-struct SchoolDay {
+struct SchoolDay: Codable {
     let date: Date
     let isHoliday: Bool
     let isHalfDay: Bool
@@ -46,24 +48,24 @@ struct SchoolDay {
     }
 }
 
-struct Block {
+struct Block: Codable {
     var blockNumber: Int
     var startTime: String
     var endTime: String
 }
 
-struct DaySchedule {
+struct DaySchedule: Codable {
     var day: DaysOfTheWeek
     var scheduleType: ScheduleType
     var blocks: [Block]
 }
 
-struct CourseBlock {
+struct CourseBlock: Codable {
     var courseName: String
     var blockNumber: Int
 }
 
-struct Course: Equatable {
+struct Course: Equatable, Codable {
     static func == (lhs: Course, rhs: Course) -> Bool {
         return lhs.id == rhs.id
     }
@@ -73,8 +75,7 @@ struct Course: Equatable {
     var instructor: String
     var schedule: [CourseDaySchedule]
 }
-
-struct CourseDaySchedule {
+struct CourseDaySchedule: Codable {
     var scheduleType: ScheduleType
     var courseBlocks: [CourseBlock]
 }
