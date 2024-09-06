@@ -83,88 +83,81 @@ class CourseInfoViewController: UIViewController {
     
     
     func loadData() {
-          let formatter = DateFormatter()
-          formatter.locale = Locale(identifier: "en_US_POSIX")
-          
-          let currentWeekSchoolDays = schoolDaysForCurrentWeek()
-          
-          var meetings: [(date: Date, dayType: ScheduleType, block: Block, startTime: String, endTime: String)] = []
-          
-          for daySchedule in course.schedule {
-              let scheduleType = daySchedule.scheduleType
-              let blocks: [Block]
-              switch scheduleType {
-              case .eDay:
-                  blocks = eDayBlocks
-              case .hDay:
-                  blocks = hDayBlocks
-              case .delayedOpening:
-                  blocks = delayedOpeningBlocks
-              default:
-                  blocks = regularDayBlocks
-              }
-              
-              for courseBlock in daySchedule.courseBlocks {
-                  if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                      for schoolDay in currentWeekSchoolDays where schoolDay.dayType == scheduleType {
-                          meetings.append((date: schoolDay.date, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
-                      }
-                  }
-              }
-          }
-          
-          var groupedMeetings: [Date: [ScheduleType: [String]]] = [:]
-          
-          for meeting in meetings {
-              formatter.dateFormat = "HH:mm"
-              if let startTime = formatter.date(from: meeting.startTime),
-                 let endTime = formatter.date(from: meeting.endTime) {
-                  formatter.dateFormat = "h:mm a"
-                  let formattedStartTime = formatter.string(from: startTime)
-                  let formattedEndTime = formatter.string(from: endTime)
-                  
-                  let timeString = "\(formattedStartTime) - \(formattedEndTime) • Block \(meeting.block.blockNumber)"
-                  
-                  if groupedMeetings[meeting.date] != nil {
-                      if groupedMeetings[meeting.date]![meeting.dayType] != nil {
-                          groupedMeetings[meeting.date]![meeting.dayType]!.append(timeString)
-                      } else {
-                          groupedMeetings[meeting.date]![meeting.dayType] = [timeString]
-                      }
-                  } else {
-                      groupedMeetings[meeting.date] = [meeting.dayType: [timeString]]
-                  }
-              }
-          }
-          
-          // Ensure all weekdays from Monday to Friday are included
-          let calendar = Calendar.current
-          guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) else {
-              return
-          }
-          
-          for schoolDay in currentWeekSchoolDays {
-              if groupedMeetings[schoolDay.date] == nil {
-                  groupedMeetings[schoolDay.date] = [schoolDay.dayType: ["No class"]]
-              } else if groupedMeetings[schoolDay.date]?[schoolDay.dayType] == nil {
-                  groupedMeetings[schoolDay.date]?[schoolDay.dayType] = ["No class"]
-              }
-          }
-          
-          meetingsByDay = groupedMeetings.flatMap { date, dayMeetings in
-              dayMeetings.map { dayType, meetings in
-                  (date: date, dayType: dayType, meetings: meetings)
-              }
-          }
-          
-          sortedDays = meetingsByDay.map { ($0.date, $0.dayType) }
-          sortedDays.sort { lhs, rhs in
-              if lhs.date == rhs.date {
-                  return lhs.dayType.rawValue < rhs.dayType.rawValue
-              }
-              return lhs.date < rhs.date
-          }
-      }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        
+        let currentWeekSchoolDays = schoolDaysForCurrentWeek()
+        
+        var meetings: [(date: Date, dayType: ScheduleType, block: Block, startTime: String, endTime: String)] = []
+        
+        for daySchedule in course.schedule {
+            let scheduleType = daySchedule.scheduleType
+            // Get the blocks for this schedule type dynamically
+            guard let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] else { continue }
+            
+            for courseBlock in daySchedule.courseBlocks {
+                if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                    for schoolDay in currentWeekSchoolDays where schoolDay.dayType.id == scheduleType.id {
+                        meetings.append((date: schoolDay.date, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
+                    }
+                }
+            }
+        }
+        
+        var groupedMeetings: [Date: [ScheduleType: [String]]] = [:]
+        
+        for meeting in meetings {
+            formatter.dateFormat = "HH:mm"
+            if let startTime = formatter.date(from: meeting.startTime),
+               let endTime = formatter.date(from: meeting.endTime) {
+                formatter.dateFormat = "h:mm a"
+                let formattedStartTime = formatter.string(from: startTime)
+                let formattedEndTime = formatter.string(from: endTime)
+                
+                let timeString = "\(formattedStartTime) - \(formattedEndTime) • Block \(meeting.block.blockNumber)"
+                
+                if groupedMeetings[meeting.date] != nil {
+                    if groupedMeetings[meeting.date]![meeting.dayType] != nil {
+                        groupedMeetings[meeting.date]![meeting.dayType]!.append(timeString)
+                    } else {
+                        groupedMeetings[meeting.date]![meeting.dayType] = [timeString]
+                    }
+                } else {
+                    groupedMeetings[meeting.date] = [meeting.dayType: [timeString]]
+                }
+            }
+        }
+        
+        // Ensure all weekdays from Monday to Friday are included
+        let calendar = Calendar.current
+        guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) else {
+            return
+        }
+        
+        for schoolDay in currentWeekSchoolDays {
+            if groupedMeetings[schoolDay.date] == nil {
+                groupedMeetings[schoolDay.date] = [schoolDay.dayType: ["No class"]]
+            } else if groupedMeetings[schoolDay.date]?[schoolDay.dayType] == nil {
+                groupedMeetings[schoolDay.date]?[schoolDay.dayType] = ["No class"]
+            }
+        }
+        
+        meetingsByDay = groupedMeetings.flatMap { date, dayMeetings in
+            dayMeetings.map { dayType, meetings in
+                (date: date, dayType: dayType, meetings: meetings)
+            }
+        }
+        
+        sortedDays = meetingsByDay.map { ($0.date, $0.dayType) }
+        sortedDays.sort { lhs, rhs in
+            if lhs.date == rhs.date {
+                return lhs.dayType.name < rhs.dayType.name
+            }
+            return lhs.date < rhs.date
+        }
+    }
+
+
       
       func scheduleDayOfWeek(for dayType: ScheduleType) -> [String] {
           let formatter = DateFormatter()
@@ -204,7 +197,7 @@ extension CourseInfoViewController: UITableViewDelegate {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMM d"
         let dateString = formatter.string(from: date)
-        return "\(dayType.rawValue) - \(date.isToday() ? "Today" : dateString)"
+        return "\(dayType.name) - \(date.isToday() ? "Today" : dateString)"
     }
     
     func tableView(_ tableView: UITableView, willDisplayHeaderView view: UIView, forSection section: Int) {

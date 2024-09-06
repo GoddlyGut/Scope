@@ -16,25 +16,182 @@ class CourseViewModel {
     var isCurrentCourseOngoing = false
     private let publicDatabase = CKContainer.default().privateCloudDatabase
     init() {
-        startCountdownTimer()
+        //
         loadData()
+        loadBlocks()
+        loadScheduleTypes()
+//        saveBlocks()
+//        saveScheduleTypes()
+//        saveData()
+                startCountdownTimer()
+        //initializeBlocks()
+        //addSchoolDay()
+        
+        
     }
     
     var schoolDays: [SchoolDay] = [
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .eDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 0, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 1, to: Date())!, isHoliday: false, isHalfDay: true, dayType: .eDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 2, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .hDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 3, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .bDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 4, to: Date())!, isHoliday: false, isHalfDay: true, dayType: .cDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 5, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .dDay),
-        SchoolDay(date: Calendar.current.date(byAdding: .day, value: 6, to: Date())!, isHoliday: false, isHalfDay: false, dayType: .aDay)
+        
     ]
      {
         didSet {
             saveData()
         }
     }
+    
+    func addSchoolDay() {
+        schoolDays = []
+        //let regularDayType = ScheduleType(name: "eDay")
+        let schoolDay = SchoolDay(date: Date(), isHoliday: false, isHalfDay: false, dayType: scheduleTypes.first(where: { $0.name == "Regular Day" }) ?? ScheduleType(name: "Regular Day"))
+        
+        schoolDays.append(schoolDay)
+    }
+    
+    var scheduleTypes: [ScheduleType] = [] {
+            didSet {
+                saveScheduleTypes()
+            }
+        }
+    
+    var blocksByScheduleType: [UUID: [Block]] = [:] {
+            didSet {
+                saveBlocks()
+            }
+        }
+    
+    func initializeBlocks() {
+        // Assuming these are your existing schedule types with predefined blocks
+        let regularDay = ScheduleType(name: "Regular Day")
+        let eDay = ScheduleType(name: "eDay")
+        let hDay = ScheduleType(name: "hDay")
+        let delayedOpening = ScheduleType(name: "Delayed Opening")
+        
+        // Add these schedule types to your CourseViewModel's scheduleTypes array
+        scheduleTypes = [regularDay, eDay, hDay, delayedOpening]
+        
+        // Assign blocks to each schedule type
+        blocksByScheduleType[regularDay.id] = [
+            Block(blockNumber: 1, startTime: "08:10", endTime: "09:08"),
+            Block(blockNumber: 2, startTime: "09:12", endTime: "10:14"),
+            Block(blockNumber: 3, startTime: "10:18", endTime: "11:16"),
+            Block(blockNumber: 4, startTime: "12:09", endTime: "13:07"),
+            Block(blockNumber: 5, startTime: "13:11", endTime: "14:09"),
+            Block(blockNumber: 6, startTime: "14:13", endTime: "15:11")
+        ]
+        
+        blocksByScheduleType[eDay.id] = [
+            Block(blockNumber: 1, startTime: "08:30", endTime: "09:09"),
+            Block(blockNumber: 2, startTime: "09:13", endTime: "09:52"),
+            Block(blockNumber: 3, startTime: "10:08", endTime: "10:47"),
+            Block(blockNumber: 4, startTime: "10:51", endTime: "11:30")
+        ]
+        
+        blocksByScheduleType[hDay.id] = [
+            Block(blockNumber: 1, startTime: "08:10", endTime: "08:38"),
+            Block(blockNumber: 2, startTime: "08:42", endTime: "09:08"),
+            Block(blockNumber: 3, startTime: "09:12", endTime: "09:38"),
+            Block(blockNumber: 4, startTime: "09:42", endTime: "10:08"),
+            Block(blockNumber: 5, startTime: "10:12", endTime: "10:38"),
+            Block(blockNumber: 6, startTime: "10:42", endTime: "11:08")
+        ]
+        
+        blocksByScheduleType[delayedOpening.id] = [
+            Block(blockNumber: 1, startTime: "10:10", endTime: "10:48"),
+            Block(blockNumber: 2, startTime: "10:52", endTime: "11:31"),
+            Block(blockNumber: 3, startTime: "12:24", endTime: "13:03"),
+            Block(blockNumber: 4, startTime: "13:07", endTime: "13:46")
+        ]
+        
+        // Save these blocks for persistence
+        saveBlocks()
+    }
+    
+    func createScheduleType(name: String) {
+            let newScheduleType = ScheduleType(name: name)
+            scheduleTypes.append(newScheduleType)
+        }
+        
+        func updateScheduleType(id: UUID, newName: String) {
+            if let index = scheduleTypes.firstIndex(where: { $0.id == id }) {
+                scheduleTypes[index].name = newName
+            }
+        }
+        
+        func deleteScheduleType(id: UUID) {
+            scheduleTypes.removeAll { $0.id == id }
+            blocksByScheduleType[id] = nil
+        }
+        
+        // Methods to manage blocks by schedule type
+        func addBlock(to scheduleType: ScheduleType, block: Block) {
+            if blocksByScheduleType[scheduleType.id] == nil {
+                blocksByScheduleType[scheduleType.id] = []
+            }
+            blocksByScheduleType[scheduleType.id]?.append(block)
+        }
+        
+        func updateBlock(in scheduleType: ScheduleType, at index: Int, with newBlock: Block) {
+            if let blocks = blocksByScheduleType[scheduleType.id], index < blocks.count {
+                blocksByScheduleType[scheduleType.id]?[index] = newBlock
+            }
+        }
+        
+    func deleteBlock(from scheduleType: ScheduleType, at index: Int) {
+        // Remove the block from the specified schedule type
+        blocksByScheduleType[scheduleType.id]?.remove(at: index)
+        
+        // Iterate over all courses and their schedules to update the schedule type
+        for courseIndex in courses.indices {
+            for dayScheduleIndex in courses[courseIndex].schedule.indices {
+                if courses[courseIndex].schedule[dayScheduleIndex].scheduleType.id == scheduleType.id {
+                    // Set the scheduleType to .none
+                    courses[courseIndex].schedule[dayScheduleIndex].scheduleType = .none
+                }
+            }
+        }
+        
+        
+    }
+
+        
+        // Methods to save/load data
+        func saveScheduleTypes() {
+            do {
+                let data = try JSONEncoder().encode(scheduleTypes)
+                UserDefaults.standard.set(data, forKey: "scheduleTypes")
+            } catch {
+                print("Failed to save schedule types: \(error)")
+            }
+        }
+        
+        func loadScheduleTypes() {
+            if let data = UserDefaults.standard.data(forKey: "scheduleTypes") {
+                do {
+                    scheduleTypes = try JSONDecoder().decode([ScheduleType].self, from: data)
+                } catch {
+                    print("Failed to load schedule types: \(error)")
+                }
+            }
+        }
+        
+        func saveBlocks() {
+            do {
+                let data = try JSONEncoder().encode(blocksByScheduleType)
+                UserDefaults.standard.set(data, forKey: "blocksByScheduleType")
+            } catch {
+                print("Failed to save blocks: \(error)")
+            }
+        }
+        
+        func loadBlocks() {
+            if let data = UserDefaults.standard.data(forKey: "blocksByScheduleType") {
+                do {
+                    blocksByScheduleType = try JSONDecoder().decode([UUID: [Block]].self, from: data)
+                } catch {
+                    print("Failed to load blocks: \(error)")
+                }
+            }
+        }
     
     func saveData() {
         do {
@@ -97,30 +254,20 @@ class CourseViewModel {
         
         // Check if school is running on the given date
         guard isSchoolRunning(on: date) else { return [] }
-
+        
         // Get the dayType for the given date
-        let dayType = self.scheduleType(on: date)
+        guard let dayType = self.scheduleType(on: date) else { return [] }
 
         // Collect all blocks for the given date
         var blocksForDate: [(course: Course, block: Block, dayType: ScheduleType)] = []
-
+        
         for course in courses {
-            for daySchedule in course.schedule where daySchedule.scheduleType == scheduleType(on: Date()) {
-                let blocks: [Block]
-                switch dayType {
-                case .eDay:
-                    blocks = eDayBlocks
-                case .hDay:
-                    blocks = hDayBlocks
-                case .delayedOpening:
-                    blocks = delayedOpeningBlocks
-                default:
-                    blocks = isHalfDay(on: date) ? hDayBlocks : regularDayBlocks
-                }
-                
-                for courseBlock in daySchedule.courseBlocks {
-                    if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                        blocksForDate.append((course, block, daySchedule.scheduleType))
+            for daySchedule in course.schedule where daySchedule.scheduleType.id == dayType.id {
+                if let blocks = blocksByScheduleType[dayType.id] {
+                    for courseBlock in daySchedule.courseBlocks {
+                        if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                            blocksForDate.append((course, block, daySchedule.scheduleType))
+                        }
                     }
                 }
             }
@@ -140,9 +287,9 @@ class CourseViewModel {
         return blocksForDate
     }
 
+
     func currentCourse(currentDate: Date = Date()) -> (course: Course, block: Block)? {
         let now = currentDate
-        let currentDay = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: now) - 1)!
         
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
@@ -154,32 +301,24 @@ class CourseViewModel {
             return nil
         }
         
+        // Determine the schedule type for the current date
+        guard let currentScheduleType = scheduleType(on: currentDate) else {
+            return nil
+        }
+        
+        // Get the blocks associated with the current schedule type
+        guard let blocks = blocksByScheduleType[currentScheduleType.id] else {
+            return nil
+        }
+        
         for course in courses {
-            for daySchedule in course.schedule where daySchedule.scheduleType == scheduleType(on: currentDate) {
-                // Determine the current schedule type
-                let scheduleType = daySchedule.scheduleType
-                
-                // Get the appropriate blocks for the current schedule type
-                let blocks: [Block]
-                switch scheduleType {
-                case .eDay:
-                    blocks = eDayBlocks
-                case .hDay:
-                    blocks = hDayBlocks
-                case .delayedOpening:
-                    blocks = delayedOpeningBlocks
-                default:
-                    blocks = regularDayBlocks
-                }
-                
+            for daySchedule in course.schedule where daySchedule.scheduleType.id == currentScheduleType.id {
                 // Check if the current time falls within any of the blocks for this course
                 for courseBlock in daySchedule.courseBlocks {
                     if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
                         // Convert block start and end times to Date objects
                         if let blockStartTime = formatter.date(from: block.startTime),
                            let blockEndTime = formatter.date(from: block.endTime) {
-                            // Logging for debugging
-                            
                             
                             if currentDateTime >= blockStartTime && currentDateTime <= blockEndTime {
                                 return (course, block)
@@ -193,6 +332,7 @@ class CourseViewModel {
         }
         return nil
     }
+
 
 
     
@@ -271,39 +411,30 @@ class CourseViewModel {
             return nil
         }
 
-        let dayType = CourseViewModel.shared.scheduleType(on: now)
-        let blocks: [Block]
-        switch dayType {
-        case .eDay:
-            blocks = eDayBlocks
-        case .hDay:
-            blocks = hDayBlocks
-        case .delayedOpening:
-            blocks = delayedOpeningBlocks
-        default:
-            blocks = CourseViewModel.shared.isHalfDay(on: now) ? hDayBlocks : regularDayBlocks
+        // Get the current schedule type for today
+        guard let dayType = CourseViewModel.shared.scheduleType(on: now),
+              let blocks = CourseViewModel.shared.blocksByScheduleType[dayType.id] else {
+            return nil
         }
         
         for course in courses {
-            for daySchedule in course.schedule {
-                if daySchedule.scheduleType == dayType {
-                    for courseBlock in daySchedule.courseBlocks {
-                        if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                            guard let startTime = combineDateAndTime(date: now, time: block.startTime),
-                                  let endTime = combineDateAndTime(date: now, time: block.endTime) else {
-                                continue
-                            }
-                            
-                            if now >= startTime && now <= endTime {
-                                // Current ongoing course
-                                return (course, startTime, endTime, isOngoing: true)
-                            } else if startTime > now {
-                                // Next upcoming course
-                                let timeDifference = startTime.timeIntervalSince(now)
-                                if timeDifference < shortestTimeDifference {
-                                    shortestTimeDifference = timeDifference
-                                    closestEvent = (course, startTime, endTime, isOngoing: false)
-                                }
+            for daySchedule in course.schedule where daySchedule.scheduleType.id == dayType.id {
+                for courseBlock in daySchedule.courseBlocks {
+                    if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                        guard let startTime = combineDateAndTime(date: now, time: block.startTime),
+                              let endTime = combineDateAndTime(date: now, time: block.endTime) else {
+                            continue
+                        }
+                        
+                        if now >= startTime && now <= endTime {
+                            // Current ongoing course
+                            return (course, startTime, endTime, isOngoing: true)
+                        } else if startTime > now {
+                            // Next upcoming course
+                            let timeDifference = startTime.timeIntervalSince(now)
+                            if timeDifference < shortestTimeDifference {
+                                shortestTimeDifference = timeDifference
+                                closestEvent = (course, startTime, endTime, isOngoing: false)
                             }
                         }
                     }
@@ -313,6 +444,7 @@ class CourseViewModel {
         
         return closestEvent
     }
+
 
 
 

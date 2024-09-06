@@ -17,6 +17,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     var blurEffectView = UIView()
     var divider = UIView()
     var plusButton = UIButton()
+    var settingsButton = UIButton()
     
     var delegate: BottomSheetDelegate?
     
@@ -152,7 +153,15 @@ extension BottomSheetViewController {
         
         plusButton.setImage(UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
         plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
+        
         stackView.addArrangedSubview(plusButton)
+        
+        settingsButton.tintColor = .pink
+        
+        settingsButton.setImage(UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
+        //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
+        settingsButton.addTarget(self, action: #selector(settingsButtonPressed), for: .touchUpInside)
+        stackView.addArrangedSubview(settingsButton)
  
         
         
@@ -173,6 +182,10 @@ extension BottomSheetViewController {
         
         
         
+    }
+    
+    @objc func settingsButtonPressed() {
+        present(UINavigationController(rootViewController: ScheduleManagerViewController()), animated: true)
     }
     
     func layout() {

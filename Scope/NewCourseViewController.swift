@@ -210,9 +210,10 @@ extension NewCourseViewController: UITableViewDataSource, UITableViewDelegate {
 
 class ScheduleCell: UITableViewCell {
     func configure(with schedule: CourseDaySchedule) {
-        textLabel?.text = "\(schedule.scheduleType.rawValue): \(schedule.courseBlocks.map { "Block \($0.blockNumber)" }.joined(separator: ", "))"
+        textLabel?.text = "\(schedule.scheduleType.name): \(schedule.courseBlocks.map { "Block \($0.blockNumber)" }.joined(separator: ", "))"
     }
 }
+
 
 
 class AddDayViewController: UIViewController {
@@ -296,15 +297,22 @@ extension AddDayViewController {
     }
     
     @objc func add() {
-        let selectedDayIndex = schedulePicker.selectedRow(inComponent: 0)
-                let selectedDayType = ScheduleType.allCases[selectedDayIndex]
-                
-                let selectedBlockIndex = blockPicker.selectedRow(inComponent: 0)
-                let selectedBlock = currentBlocks[selectedBlockIndex]
+        // Access the dynamic schedule types from CourseViewModel
+        let scheduleTypes = CourseViewModel.shared.scheduleTypes
         
+        // Get the selected schedule type from the picker
+        let selectedDayIndex = schedulePicker.selectedRow(inComponent: 0)
+        let selectedDayType = scheduleTypes[selectedDayIndex]
+        
+        // Get the selected block from the block picker
+        let selectedBlockIndex = blockPicker.selectedRow(inComponent: 0)
+        let selectedBlock = currentBlocks[selectedBlockIndex]
+        
+        // Dismiss the view and call the delegate method with the selected schedule type and block number
         self.dismiss(animated: true)
         delegate?.addDay(scheduleType: selectedDayType, blockNumbers: [selectedBlock.blockNumber])
     }
+
 }
 
 extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
@@ -315,48 +323,65 @@ extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         if pickerView == schedulePicker {
-            return ScheduleType.allCases.count
+            // Use the dynamic schedule types from CourseViewModel
+            return CourseViewModel.shared.scheduleTypes.count
         } else if pickerView == blockPicker {
             return currentBlocks.count
         }
         return 0
     }
+
     
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
         if pickerView == schedulePicker {
-            return ScheduleType.allCases[row].rawValue
+            // Use the dynamic schedule types from CourseViewModel
+            let scheduleType = CourseViewModel.shared.scheduleTypes[row]
+            return scheduleType.name
         } else if pickerView == blockPicker {
             let block = currentBlocks[row]
             return "Block \(block.blockNumber): \(formatter.date(from: block.startTime)?.formattedHMTime() ?? "") - \(formatter.date(from: block.endTime)?.formattedHMTime() ?? "")"
         }
         return nil
     }
+
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         if pickerView == schedulePicker {
-            let selectedDay = ScheduleType.allCases[row]
-            dayLabel.text = "Chosen day: \(selectedDay.rawValue)"
-            
-            switch selectedDay {
-            case .aDay, .bDay, .cDay, .dDay:
-                currentBlocks = regularDayBlocks
-            case .eDay:
-                currentBlocks = eDayBlocks
-            case .hDay:
-                currentBlocks = hDayBlocks
-            case .delayedOpening:
-                currentBlocks = delayedOpeningBlocks
-            case .none:
-                currentBlocks = []
+            // Get the selected schedule type from the dynamic list
+            if !CourseViewModel.shared.scheduleTypes.isEmpty {
+                let selectedDay = CourseViewModel.shared.scheduleTypes[row]
+                dayLabel.text = "Chosen day: \(selectedDay.name)"
+                // Fetch the blocks associated with the selected schedule type
+                if let blocks = CourseViewModel.shared.blocksByScheduleType[selectedDay.id] {
+                    currentBlocks = blocks
+                } else {
+                    currentBlocks = []
+                }
             }
+            else {
+                
+                dayLabel.text = "Chosen day: None"
+            }
+            
+            
+            
+            // Reload the block picker to reflect the selected schedule type
+            blockPicker.reloadAllComponents()
+            
         } else if pickerView == blockPicker {
-            selectedBlock = currentBlocks[row]
-           
-            blockLabel.text = "Selected: Block \(selectedBlock?.blockNumber ?? 0)"
+            // Set the selected block based on the current blocks for the selected schedule type
+            if currentBlocks.isEmpty {
+                blockLabel.text = "Selected: None"
+            }
+            else {
+                selectedBlock = currentBlocks[row]
+                blockLabel.text = "Selected: Block \(selectedBlock?.blockNumber ?? 0)"
+            }
             
             // Here you can update the UI to reflect the selected block
         }
     }
+
 }
 
 extension AddDayViewController: UITableViewDataSource {

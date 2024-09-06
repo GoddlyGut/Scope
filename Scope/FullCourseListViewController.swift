@@ -148,7 +148,10 @@ class FullCourseCell: UITableViewCell {
 
     func configure(with course: Course) {
         courseNameLabel.text = course.name
-        let days = course.schedule.map { $0.scheduleType.rawValue }.joined(separator: ", ")
+        
+        // Get the names of the schedule types and join them into a string
+        let days = course.schedule.map { $0.scheduleType.name }.joined(separator: ", ")
         daysLabel.text = "Meets on: \(days)"
     }
+
 }

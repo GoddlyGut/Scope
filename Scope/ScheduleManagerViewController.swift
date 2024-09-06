@@ -1,0 +1,376 @@
+//
+//  ScheduleManagerViewController.swift
+//  Scope
+//
+//  Created by Ari Reitman on 9/5/24.
+//
+
+import UIKit
+
+class ScheduleManagerViewController: UIViewController {
+    
+    let viewModel = CourseViewModel.shared
+    var tableView = UITableView()
+    var addButton = UIButton(type: .system)
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+    }
+    
+    // Setup the UI for the schedule manager
+    func setupUI() {
+        title = "Manage Schedules"
+        view.backgroundColor = .systemBackground
+        
+        // Setup Add Button
+        addButton.setTitle("Add Schedule", for: .normal)
+        addButton.addTarget(self, action: #selector(addSchedule), for: .touchUpInside)
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(addButton)
+        
+        // Setup TableView
+        tableView = UITableView(frame: .zero, style: .plain)
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
+        
+        // Register UITableViewCell
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ScheduleCell")
+        
+        // Layout
+        NSLayoutConstraint.activate([
+            addButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            addButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            tableView.topAnchor.constraint(equalTo: addButton.bottomAnchor, constant: 20),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditing))
+    }
+    
+    // Toggle table view editing mode
+    @objc func toggleEditing() {
+        tableView.setEditing(!tableView.isEditing, animated: true)
+        navigationItem.rightBarButtonItem?.title = tableView.isEditing ? "Done" : "Edit"
+    }
+    
+    // Action to add a new schedule
+    @objc func addSchedule() {
+        let alert = UIAlertController(title: "New Schedule", message: "Enter a name for the new schedule", preferredStyle: .alert)
+        alert.addTextField { (textField) in
+            textField.placeholder = "Schedule Name"
+        }
+        
+        let addAction = UIAlertAction(title: "Add", style: .default) { [unowned self] _ in
+            if let scheduleName = alert.textFields?.first?.text, !scheduleName.isEmpty {
+                self.viewModel.createScheduleType(name: scheduleName)
+                self.tableView.reloadData()
+            }
+        }
+        alert.addAction(addAction)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    // Navigate to block customization for selected schedule
+    func customizeBlocks(for scheduleType: ScheduleType) {
+        let blockVC = BlockCustomizationViewController(scheduleType: scheduleType)
+        navigationController?.pushViewController(blockVC, animated: true)
+    }
+}
+
+extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDelegate {
+    
+    // Number of sections
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+    
+    // Number of rows in section
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return viewModel.scheduleTypes.count
+    }
+    
+    // Cell for row
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath)
+        let schedule = viewModel.scheduleTypes[indexPath.row]
+        cell.textLabel?.text = schedule.name
+        return cell
+    }
+    
+    // Handle row selection
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let schedule = viewModel.scheduleTypes[indexPath.row]
+        customizeBlocks(for: schedule)
+    }
+    
+    // Editing: Delete schedule
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            let schedule = viewModel.scheduleTypes[indexPath.row]
+            viewModel.deleteScheduleType(id: schedule.id)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
+    }
+}
+
+class BlockCustomizationViewController: UIViewController {
+    
+    var scheduleType: ScheduleType
+    var tableView = UITableView()
+    var availableBlockNumbers: [Int] = []
+    
+    init(scheduleType: ScheduleType) {
+        self.scheduleType = scheduleType
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        refreshAvailableBlockNumbers() // Ensure availableBlockNumbers are updated
+    }
+    
+    // Setup UI for block customization
+    func setupUI() {
+        title = "Customize Blocks"
+        view.backgroundColor = .systemBackground
+        
+        // Setup TableView
+        tableView = UITableView(frame: .zero, style: .plain)
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
+        
+        // Register UITableViewCell
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BlockCell")
+        
+        // Add block button
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Add Block", style: .plain, target: self, action: #selector(addBlock))
+        
+        // Layout TableView
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+    }
+    
+    // Refresh the available block numbers by removing the already used block numbers
+    func refreshAvailableBlockNumbers() {
+        let allBlockNumbers = Array(1...10) // Assume block numbers 1 to 10 are allowed
+        let usedBlockNumbers = CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.map { $0.blockNumber } ?? []
+        availableBlockNumbers = allBlockNumbers.filter { !usedBlockNumbers.contains($0) }
+    }
+    
+    // Add a new block using UIPickerView for block number and time selection
+    @objc func addBlock() {
+        refreshAvailableBlockNumbers() // Update the available block numbers before showing the picker
+        let pickerViewController = TimePickerViewController(scheduleType: scheduleType, availableBlockNumbers: availableBlockNumbers)
+        pickerViewController.delegate = self
+        navigationController?.pushViewController(pickerViewController, animated: true)
+    }
+}
+
+// MARK: - UITableView DataSource & Delegate
+extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDelegate {
+    
+    // Number of sections
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return 1
+    }
+    
+    // Number of rows in section
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.count ?? 0
+    }
+    
+    // Cell for row
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "BlockCell", for: indexPath)
+        if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
+            let block = blocks[indexPath.row]
+            cell.textLabel?.text = "Block \(block.blockNumber): \(block.startTime) - \(block.endTime)"
+        }
+        return cell
+    }
+    
+    // Handle row deletion
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            CourseViewModel.shared.deleteBlock(from: scheduleType, at: indexPath.row)
+            refreshAvailableBlockNumbers()
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
+    }
+}
+
+// MARK: - TimePickerViewControllerDelegate
+extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
+    func didAddBlock(block: Block) {
+        // Add the block and update the table
+        CourseViewModel.shared.addBlock(to: scheduleType, block: block)
+        
+        refreshAvailableBlockNumbers()
+        tableView.reloadData()
+    }
+}
+
+protocol TimePickerViewControllerDelegate: AnyObject {
+    func didAddBlock(block: Block)
+}
+
+class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
+    
+    weak var delegate: TimePickerViewControllerDelegate?
+    
+    var scheduleType: ScheduleType
+    var availableBlockNumbers: [Int]
+    
+    let blockPicker = UIPickerView()
+    let startTimePicker = UIDatePicker()
+    let endTimePicker = UIDatePicker()
+    
+    var selectedBlockNumber: Int?
+    var startTime: String = "08:00"
+    var endTime: String = "09:00"
+    
+    init(scheduleType: ScheduleType, availableBlockNumbers: [Int]) {
+        self.scheduleType = scheduleType
+        self.availableBlockNumbers = availableBlockNumbers
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+    }
+    
+    func setupUI() {
+        title = "Pick Block and Time"
+        view.backgroundColor = .systemBackground
+        
+        // Setup UIPicker for block number
+        blockPicker.delegate = self
+        blockPicker.dataSource = self
+        blockPicker.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(blockPicker)
+        
+        // Setup UIDatePicker for start time selection
+        startTimePicker.datePickerMode = .time
+        startTimePicker.addTarget(self, action: #selector(startTimeChanged), for: .valueChanged)
+        startTimePicker.translatesAutoresizingMaskIntoConstraints = false
+        startTimePicker.date = getDate(from: startTime) ?? Date()
+        view.addSubview(startTimePicker)
+        
+        // Setup UIDatePicker for end time selection
+        endTimePicker.datePickerMode = .time
+        endTimePicker.addTarget(self, action: #selector(endTimeChanged), for: .valueChanged)
+        endTimePicker.translatesAutoresizingMaskIntoConstraints = false
+        endTimePicker.date = getDate(from: endTime) ?? Date()
+        view.addSubview(endTimePicker)
+        
+        // Add a button to save the block
+        let saveButton = UIButton(type: .system)
+        saveButton.setTitle("Save Block", for: .normal)
+        saveButton.addTarget(self, action: #selector(saveBlock), for: .touchUpInside)
+        saveButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(saveButton)
+        
+        // Layout UI elements
+        NSLayoutConstraint.activate([
+            blockPicker.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            blockPicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            blockPicker.widthAnchor.constraint(equalToConstant: 200),
+            blockPicker.heightAnchor.constraint(equalToConstant: 100),
+            
+            startTimePicker.topAnchor.constraint(equalTo: blockPicker.bottomAnchor, constant: 20),
+            startTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            endTimePicker.topAnchor.constraint(equalTo: startTimePicker.bottomAnchor, constant: 20),
+            endTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            
+            saveButton.topAnchor.constraint(equalTo: endTimePicker.bottomAnchor, constant: 20),
+            saveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+        ])
+    }
+    
+    // Handle the start time picker change
+    @objc func startTimeChanged(_ sender: UIDatePicker) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        startTime = formatter.string(from: sender.date)
+    }
+    
+    // Handle the end time picker change
+    @objc func endTimeChanged(_ sender: UIDatePicker) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        endTime = formatter.string(from: sender.date)
+    }
+    
+    // Save block
+    @objc func saveBlock() {
+        guard let blockNumber = selectedBlockNumber else {
+            let alert = UIAlertController(title: "Error", message: "Please select a block number", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        // Ensure that the end time is after the start time
+        if let startDate = getDate(from: startTime), let endDate = getDate(from: endTime), startDate >= endDate {
+            let alert = UIAlertController(title: "Error", message: "End time must be after start time", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        print(startTime)
+        print(endTime)
+        
+        let newBlock = Block(blockNumber: blockNumber, startTime: startTime, endTime: endTime)
+        delegate?.didAddBlock(block: newBlock)
+        navigationController?.popViewController(animated: true)
+    }
+    
+    // Helper method to convert string time to Date
+    func getDate(from timeString: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.date(from: timeString)
+    }
+    
+    // MARK: - UIPickerView Delegate & DataSource
+    
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return availableBlockNumbers.count
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return "Block \(availableBlockNumbers[row])"
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        selectedBlockNumber = availableBlockNumbers[row]
+    }
+}

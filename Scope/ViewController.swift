@@ -60,7 +60,9 @@ extension ViewController {
 //        subtitleLabel.font = .systemFont(ofSize: 15, weight: .regular)
 //        titleStackView.addArrangedSubview(subtitleLabel)
 
+
         self.navigationItem.title = ""
+        
         view.backgroundColor = .systemBackground
         
         centerStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -122,6 +124,8 @@ extension ViewController {
         progressRing.addSubview(classNameCapsule)
         
     }
+    
+
     
     func layout() {
         NSLayoutConstraint.activate([
@@ -204,7 +208,7 @@ extension ViewController {
                 self.classNameCapsule.isHidden = true
                 self.timeRemaining.isHidden = true
                 self.noCoursesLeft.isHidden = false
-                self.navigationItem.title = "No class"
+                self.navigationItem.title = CourseViewModel.shared.scheduleType(on: Date())?.name ?? ""
                 
             }
             else {
@@ -220,7 +224,7 @@ extension ViewController {
                     self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
                 }
                 self.currentCourseLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? ""
-                self.navigationItem.title = CourseViewModel.shared.currentCourse()?.course.name ?? ""
+                self.navigationItem.title = CourseViewModel.shared.scheduleType(on: Date())?.name ?? ""
             }
             
         }
