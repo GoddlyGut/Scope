@@ -16,7 +16,18 @@ class DayScheduleCustomizationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        NotificationCenter.default.addObserver(self, selector: #selector(onSchoolDaysUpdate), name: .didUpdateSchoolDays, object: nil)
+        
     }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func onSchoolDaysUpdate() {
+        self.tableView.reloadData()
+    }
+    
 
     func setupUI() {
         title = "Customize Days"
@@ -54,11 +65,12 @@ class DayScheduleCustomizationViewController: UIViewController {
             self?.tableView.reloadData()
         }
         
+        let navigationController = UINavigationController(rootViewController: datePickerVC)
         // Present the view controller as a page sheet
-        datePickerVC.modalPresentationStyle = .pageSheet
-        datePickerVC.sheetPresentationController?.detents = [.medium()] // Half-page presentation
+        navigationController.modalPresentationStyle = .pageSheet
+        navigationController.sheetPresentationController?.detents = [.medium()] // Half-page presentation
         
-        present(datePickerVC, animated: true)
+        present(navigationController, animated: true)
     }
 
 
@@ -70,7 +82,7 @@ class DayScheduleCustomizationViewController: UIViewController {
         for scheduleType in viewModel.scheduleTypes {
             let action = UIAlertAction(title: scheduleType.name, style: .default) { [weak self] _ in
                 self?.viewModel.setScheduleType(for: date, scheduleType: scheduleType)
-                self?.tableView.reloadData()
+//                self?.tableView.reloadData()
             }
             alert.addAction(action)
         }
@@ -292,7 +304,6 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
 
 }
 
-
 class DatePickerViewController: UIViewController {
 
     var datePicker = UIDatePicker()
@@ -306,30 +317,98 @@ class DatePickerViewController: UIViewController {
     func setupUI() {
         view.backgroundColor = .systemBackground
         
+        // Set up Next button (instead of Done)
+        let nextButton = UIButton(type: .system)
+        nextButton.setTitle("Next", for: .normal)
+        nextButton.addTarget(self, action: #selector(nextButtonTapped), for: .touchUpInside)
+        
+        navigationItem.title = "Select Date"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: nextButton)
+        
         // Configure the date picker
         datePicker.datePickerMode = .date
         datePicker.preferredDatePickerStyle = .inline
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(datePicker)
         
-        // Set up Done button
-        let doneButton = UIButton(type: .system)
-        doneButton.setTitle("Done", for: .normal)
-        doneButton.addTarget(self, action: #selector(doneButtonTapped), for: .touchUpInside)
-        doneButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(doneButton)
-        
         // Layout constraints
         NSLayoutConstraint.activate([
             datePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             datePicker.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            doneButton.topAnchor.constraint(equalTo: datePicker.bottomAnchor, constant: 20),
-            doneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
     }
 
-    @objc func doneButtonTapped() {
-        onDateSelected?(datePicker.date)
-        dismiss(animated: true, completion: nil)
+    @objc func nextButtonTapped() {
+        // Call this method when the user taps the "Next" button
+        let selectedDate = datePicker.date
+        onDateSelected?(selectedDate)
+        
+        // Push the DayTypeSelectionViewController
+        let dayTypeSelectionVC = DayTypeSelectionViewController()
+        dayTypeSelectionVC.selectedDate = selectedDate // Pass the selected date to the next VC
+        navigationController?.pushViewController(dayTypeSelectionVC, animated: true)
     }
 }
+
+class DayTypeSelectionViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+
+    var tableView = UITableView()
+   // Add your available day types here
+    var selectedDate: Date? // The date passed from the DatePickerViewController
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+    }
+
+    func setupUI() {
+        view.backgroundColor = .systemBackground
+        navigationItem.title = "Select Day Type"
+        
+        // Setup TableView
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
+        
+        // Register UITableViewCell
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "DayTypeCell")
+        
+        // Layout TableView
+        NSLayoutConstraint.activate([
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
+        ])
+    }
+
+    // UITableViewDataSource Methods
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return CourseViewModel.shared.scheduleTypes.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "DayTypeCell", for: indexPath)
+        let dayType = CourseViewModel.shared.scheduleTypes[indexPath.row]
+        cell.textLabel?.text = dayType.name
+        return cell
+    }
+
+    // UITableViewDelegate Method
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let selectedDayType = CourseViewModel.shared.scheduleTypes[indexPath.row]
+        
+        // Here, you can do whatever you need with the selected day type and the selected date
+        if let date = selectedDate {
+            print("Selected date: \(date), Selected day type: \(selectedDayType.name)")
+            CourseViewModel.shared.setScheduleType(for: date, scheduleType: selectedDayType)
+            // For example, you can assign the selected day type to the selected date
+            // (This depends on your view model logic)
+        }
+        
+        // After selection, you can pop or navigate away
+        dismiss(animated: true)
+    }
+}
+

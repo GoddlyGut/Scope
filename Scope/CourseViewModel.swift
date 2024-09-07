@@ -37,6 +37,7 @@ class CourseViewModel {
      {
         didSet {
             saveData()
+            NotificationCenter.default.post(name: .didUpdateSchoolDays, object: nil)
         }
     }
     

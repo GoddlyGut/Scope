@@ -69,6 +69,7 @@ extension Notification.Name {
     static let didUpdateCourseList = Notification.Name("didUpdateCourseList")
     static let didUpdateBlocks = Notification.Name("didUpdateBlocks")
     static let didUpdateScheduleType = Notification.Name("didUpdateScheduleType")
+    static let didUpdateSchoolDays = Notification.Name("didUpdateSchoolDays")
 }
 
 
