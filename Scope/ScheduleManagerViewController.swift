@@ -7,6 +7,11 @@
 
 import UIKit
 
+protocol TimePickerViewControllerDelegate: AnyObject {
+    func didAddBlock(block: Block)
+    func didEditBlock(block: Block, at index: Int)
+}
+
 class ScheduleManagerViewController: UIViewController {
     
     let viewModel = CourseViewModel.shared
@@ -65,17 +70,28 @@ class ScheduleManagerViewController: UIViewController {
         alert.addTextField { (textField) in
             textField.placeholder = "Schedule Name"
         }
-        
+
         let addAction = UIAlertAction(title: "Add", style: .default) { [unowned self] _ in
             if let scheduleName = alert.textFields?.first?.text, !scheduleName.isEmpty {
-                self.viewModel.createScheduleType(name: scheduleName)
-                self.tableView.reloadData()
+                // Check if a schedule with the same name already exists
+                if self.viewModel.scheduleTypes.contains(where: { $0.name.lowercased() == scheduleName.lowercased() }) {
+                    // Show an error alert if the name already exists
+                    let errorAlert = UIAlertController(title: "Error", message: "A schedule with this name already exists. Please choose a different name.", preferredStyle: .alert)
+                    errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(errorAlert, animated: true)
+                } else {
+                    // Create the schedule if the name is unique
+                    self.viewModel.createScheduleType(name: scheduleName)
+                    self.tableView.reloadData()
+                }
             }
         }
+        
         alert.addAction(addAction)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
+
     
     // Navigate to block customization for selected schedule
     func customizeBlocks(for scheduleType: ScheduleType) {
@@ -169,11 +185,18 @@ class BlockCustomizationViewController: UIViewController {
     }
     
     // Refresh the available block numbers by removing the already used block numbers
-    func refreshAvailableBlockNumbers() {
+    func refreshAvailableBlockNumbers(editingBlockNumber: Int? = nil) {
         let allBlockNumbers = Array(1...10) // Assume block numbers 1 to 10 are allowed
         let usedBlockNumbers = CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.map { $0.blockNumber } ?? []
-        availableBlockNumbers = allBlockNumbers.filter { !usedBlockNumbers.contains($0) }
+        
+        // If we are editing, add the block number being edited back into the available numbers
+        if let editingBlockNumber = editingBlockNumber {
+            availableBlockNumbers = allBlockNumbers.filter { $0 == editingBlockNumber || !usedBlockNumbers.contains($0) }
+        } else {
+            availableBlockNumbers = allBlockNumbers.filter { !usedBlockNumbers.contains($0) }
+        }
     }
+
     
     // Add a new block using UIPickerView for block number and time selection
     @objc func addBlock() {
@@ -181,6 +204,25 @@ class BlockCustomizationViewController: UIViewController {
         let pickerViewController = TimePickerViewController(scheduleType: scheduleType, availableBlockNumbers: availableBlockNumbers)
         pickerViewController.delegate = self
         navigationController?.pushViewController(pickerViewController, animated: true)
+    }
+}
+
+extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
+    
+    func didAddBlock(block: Block) {
+        // Add the block and update the table
+        CourseViewModel.shared.addBlock(to: scheduleType, block: block)
+        
+        refreshAvailableBlockNumbers()
+        tableView.reloadData()
+    }
+    
+    // Edit an existing block
+    func didEditBlock(block: Block, at index: Int) {
+        // Update the block and refresh the table
+        CourseViewModel.shared.updateBlock(in: scheduleType, at: index, with: block)
+        refreshAvailableBlockNumbers()
+        tableView.reloadData()
     }
 }
 
@@ -215,22 +257,36 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
-}
-
-// MARK: - TimePickerViewControllerDelegate
-extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
-    func didAddBlock(block: Block) {
-        // Add the block and update the table
-        CourseViewModel.shared.addBlock(to: scheduleType, block: block)
+    
+    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (action, view, completionHandler) in
+            guard let self = self, let blocks = CourseViewModel.shared.blocksByScheduleType[self.scheduleType.id] else { return }
+            let blockToEdit = blocks[indexPath.row]
+            
+            // Pass the block number to ensure it's available in the picker
+            self.refreshAvailableBlockNumbers(editingBlockNumber: blockToEdit.blockNumber)
+            
+            let pickerViewController = TimePickerViewController(scheduleType: self.scheduleType, availableBlockNumbers: self.availableBlockNumbers, blockToEdit: blockToEdit, blockIndex: indexPath.row)
+            pickerViewController.delegate = self
+            self.navigationController?.pushViewController(pickerViewController, animated: true)
+            completionHandler(true)
+        }
+        editAction.backgroundColor = .systemBlue
         
-        refreshAvailableBlockNumbers()
-        tableView.reloadData()
+        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (action, view, completionHandler) in
+            CourseViewModel.shared.deleteBlock(from: self?.scheduleType ?? ScheduleType.none, at: indexPath.row)
+            self?.refreshAvailableBlockNumbers()
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            completionHandler(true)
+        }
+        
+        return UISwipeActionsConfiguration(actions: [editAction, deleteAction])
     }
+
+
 }
 
-protocol TimePickerViewControllerDelegate: AnyObject {
-    func didAddBlock(block: Block)
-}
+
 
 class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
     
@@ -238,6 +294,9 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
     
     var scheduleType: ScheduleType
     var availableBlockNumbers: [Int]
+    
+    var blockToEdit: Block?
+    var blockIndex: Int?
     
     let blockPicker = UIPickerView()
     let startTimePicker = UIDatePicker()
@@ -247,9 +306,16 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
     var startTime: String = "08:00"
     var endTime: String = "09:00"
     
-    init(scheduleType: ScheduleType, availableBlockNumbers: [Int]) {
+    
+    init(scheduleType: ScheduleType, availableBlockNumbers: [Int], blockToEdit: Block? = nil, blockIndex: Int? = nil) {
         self.scheduleType = scheduleType
         self.availableBlockNumbers = availableBlockNumbers
+        
+        if let first = availableBlockNumbers.first {
+            self.selectedBlockNumber = first
+        }
+        self.blockToEdit = blockToEdit
+        self.blockIndex = blockIndex
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -260,10 +326,28 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        configureForEditing()
     }
     
+    func configureForEditing() {
+            if let blockToEdit = blockToEdit {
+                selectedBlockNumber = blockToEdit.blockNumber
+                startTime = blockToEdit.startTime
+                endTime = blockToEdit.endTime
+                
+                // Set block number picker to the correct value
+                if let blockNumberIndex = availableBlockNumbers.firstIndex(of: blockToEdit.blockNumber) {
+                    blockPicker.selectRow(blockNumberIndex, inComponent: 0, animated: false)
+                }
+                
+                // Set the time pickers to the block’s current start and end times
+                startTimePicker.date = getDate(from: startTime) ?? Date()
+                endTimePicker.date = getDate(from: endTime) ?? Date()
+            }
+        }
+    
     func setupUI() {
-        title = "Pick Block and Time"
+        title = blockToEdit == nil ? "Pick Block and Time" : "Edit Block"
         view.backgroundColor = .systemBackground
         
         // Setup UIPicker for block number
@@ -311,6 +395,22 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
         ])
     }
     
+    func setupEditing(for block: Block) {
+        selectedBlockNumber = block.blockNumber
+        startTime = block.startTime
+        endTime = block.endTime
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        // Set picker and time pickers to current values
+        if let blockIndex = availableBlockNumbers.firstIndex(of: block.blockNumber) {
+            blockPicker.selectRow(blockIndex, inComponent: 0, animated: false)
+        }
+        startTimePicker.date = formatter.date(from: startTime) ?? Date()
+        endTimePicker.date = formatter.date(from: endTime) ?? Date()
+    }
+    
     // Handle the start time picker change
     @objc func startTimeChanged(_ sender: UIDatePicker) {
         let formatter = DateFormatter()
@@ -341,13 +441,18 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
             present(alert, animated: true)
             return
         }
-        print(startTime)
-        print(endTime)
         
         let newBlock = Block(blockNumber: blockNumber, startTime: startTime, endTime: endTime)
-        delegate?.didAddBlock(block: newBlock)
+        
+        if let blockIndex = blockIndex { // Edit mode
+            delegate?.didEditBlock(block: newBlock, at: blockIndex)
+        } else { // Add mode
+            delegate?.didAddBlock(block: newBlock)
+        }
+        
         navigationController?.popViewController(animated: true)
     }
+
     
     // Helper method to convert string time to Date
     func getDate(from timeString: String) -> Date? {
@@ -371,6 +476,11 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
     }
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
-        selectedBlockNumber = availableBlockNumbers[row]
+        if !availableBlockNumbers.isEmpty {
+            selectedBlockNumber = availableBlockNumbers[row]
+        }
+        
     }
+    
+    
 }

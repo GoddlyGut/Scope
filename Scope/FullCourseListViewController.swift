@@ -17,6 +17,7 @@ class FullCourseListViewController: UIViewController {
         super.viewDidLoad()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCourseList, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateBlock), name: .didUpdateScheduleType, object: nil)
         
         setupTableView()
         style()
@@ -71,6 +72,10 @@ extension FullCourseListViewController {
     }
     
     @objc func updateUI() {
+        coursesTableView.reloadData()
+    }
+    
+    @objc func updateBlock() {
         coursesTableView.reloadData()
     }
 }

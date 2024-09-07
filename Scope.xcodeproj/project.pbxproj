@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		DF0AA4B72C5932C100692B31 /* NewCourseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */; };
 		DF1B0F332C8A9A1800CA2CD4 /* ScheduleManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */; };
+		DF1B0F352C8BD33300CA2CD4 /* DayScheduleCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */; };
 		DF338D872C27217D00E22348 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF338D862C27217D00E22348 /* AppDelegate.swift */; };
 		DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF338D8A2C27217D00E22348 /* ViewController.swift */; };
 		DF338D902C27217F00E22348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF338D8F2C27217F00E22348 /* Assets.xcassets */; };
@@ -26,6 +27,7 @@
 /* Begin PBXFileReference section */
 		DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewCourseViewController.swift; sourceTree = "<group>"; };
 		DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManagerViewController.swift; sourceTree = "<group>"; };
+		DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayScheduleCustomizationViewController.swift; sourceTree = "<group>"; };
 		DF338D832C27217D00E22348 /* Scope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Scope.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF338D862C27217D00E22348 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DF338D8A2C27217D00E22348 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -73,6 +75,7 @@
 		DF338D852C27217D00E22348 /* Scope */ = {
 			isa = PBXGroup;
 			children = (
+				DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */,
 				DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */,
 				DFF33C582C2732A600EB915A /* Scope.entitlements */,
 				DF338D862C27217D00E22348 /* AppDelegate.swift */,
@@ -174,6 +177,7 @@
 				DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */,
 				DF6512212C53F2A5009ADB8E /* Delegates.swift in Sources */,
 				DF0AA4B72C5932C100692B31 /* NewCourseViewController.swift in Sources */,
+				DF1B0F352C8BD33300CA2CD4 /* DayScheduleCustomizationViewController.swift in Sources */,
 				DF338D872C27217D00E22348 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -74,12 +74,24 @@ class CourseInfoViewController: UIViewController {
     }
     
     func schoolDaysForCurrentWeek() -> [SchoolDay] {
-        guard let startOfWeek = Date().startOfWeek(), let endOfWeek = Date().endOfWeek() else {
+        let calendar = Calendar.current
+
+        // Safely unwrap the start of the week using dateInterval(of:for:)
+        guard let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start else {
             return []
         }
 
-        return CourseViewModel.shared.schoolDays.filter { $0.date >= startOfWeek && $0.date <= endOfWeek }
+        // Add 6 days to the start of the week to get the end of the week
+        let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+
+        // Filter the school days between the start and end of the week
+        return CourseViewModel.shared.schoolDays.filter {
+            guard let schoolDayDate = $0.date else { return false }
+            return schoolDayDate >= startOfWeek && schoolDayDate <= endOfWeek
+        }
     }
+
+
     
     
     func loadData() {
@@ -92,17 +104,34 @@ class CourseInfoViewController: UIViewController {
         
         for daySchedule in course.schedule {
             let scheduleType = daySchedule.scheduleType
-            // Get the blocks for this schedule type dynamically
+
+            // Safely get the blocks for the current schedule type
             guard let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] else { continue }
-            
+
             for courseBlock in daySchedule.courseBlocks {
                 if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                    for schoolDay in currentWeekSchoolDays where schoolDay.dayType.id == scheduleType.id {
-                        meetings.append((date: schoolDay.date, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
+                    for schoolDay in currentWeekSchoolDays {
+                        
+                        // Handle specific dates
+                        if let schoolDayDate = schoolDay.date {
+                            // If the specific date matches the current day, append it
+                            if schoolDay.dayType.id == scheduleType.id {
+                                meetings.append((date: schoolDayDate, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
+                            }
+                        }
+                        
+                        // Handle recurring days
+                        if let dayOfTheWeek = schoolDay.dayOfWeek, dayOfTheWeek.rawValue == Calendar.current.component(.weekday, from: Date()) {
+                            if schoolDay.dayType.id == scheduleType.id {
+                                let today = Date() // The date for today or the recurring day
+                                meetings.append((date: today, dayType: scheduleType, block: block, startTime: block.startTime, endTime: block.endTime))
+                            }
+                        }
                     }
                 }
             }
         }
+
         
         var groupedMeetings: [Date: [ScheduleType: [String]]] = [:]
         
@@ -135,12 +164,29 @@ class CourseInfoViewController: UIViewController {
         }
         
         for schoolDay in currentWeekSchoolDays {
-            if groupedMeetings[schoolDay.date] == nil {
-                groupedMeetings[schoolDay.date] = [schoolDay.dayType: ["No class"]]
-            } else if groupedMeetings[schoolDay.date]?[schoolDay.dayType] == nil {
-                groupedMeetings[schoolDay.date]?[schoolDay.dayType] = ["No class"]
+            if let schoolDayDate = schoolDay.date {
+                // Handle specific dates
+                if groupedMeetings[schoolDayDate] == nil {
+                    groupedMeetings[schoolDayDate] = [schoolDay.dayType: ["No class"]]
+                } else if groupedMeetings[schoolDayDate]?[schoolDay.dayType] == nil {
+                    groupedMeetings[schoolDayDate]?[schoolDay.dayType] = ["No class"]
+                }
+            } else if let recurringDay = schoolDay.dayOfWeek {
+                // Handle recurring days
+                let calendar = Calendar.current
+                let currentWeekDays = (0...6).map { calendar.date(byAdding: .day, value: $0, to: Date().startOfWeek()!)! }
+                
+                for day in currentWeekDays where calendar.component(.weekday, from: day) == recurringDay.rawValue {
+                    // Ensure we have a key for this recurring day
+                    if groupedMeetings[day] == nil {
+                        groupedMeetings[day] = [schoolDay.dayType: ["No class"]]
+                    } else if groupedMeetings[day]?[schoolDay.dayType] == nil {
+                        groupedMeetings[day]?[schoolDay.dayType] = ["No class"]
+                    }
+                }
             }
         }
+
         
         meetingsByDay = groupedMeetings.flatMap { date, dayMeetings in
             dayMeetings.map { dayType, meetings in
@@ -158,15 +204,33 @@ class CourseInfoViewController: UIViewController {
     }
 
 
-      
-      func scheduleDayOfWeek(for dayType: ScheduleType) -> [String] {
-          let formatter = DateFormatter()
-          formatter.dateFormat = "EEEE"
-          
-          let days = CourseViewModel.shared.schoolDays.filter { $0.dayType == dayType }
-          let dayNames = days.map { formatter.string(from: $0.date) }
-          return dayNames
-      }
+    func scheduleDayOfWeek(for dayType: ScheduleType) -> [String] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        let calendar = Calendar.current
+        
+        // Retrieve the start of the current week
+        let currentWeekDays = (0...6).map { calendar.date(byAdding: .day, value: $0, to: Date().startOfWeek()!)! }
+        
+        // Filter for school days matching the dayType
+        let days = CourseViewModel.shared.schoolDays.filter { $0.dayType == dayType }
+        
+        // Map the school days to their corresponding names
+        let dayNames = days.flatMap { schoolDay -> [String] in
+            if let specificDate = schoolDay.date {
+                // Handle specific dates
+                return [formatter.string(from: specificDate)]
+            } else if let recurringDay = schoolDay.dayOfWeek {
+                // Handle recurring days
+                return currentWeekDays.filter { calendar.component(.weekday, from: $0) == recurringDay.rawValue }
+                                      .map { formatter.string(from: $0) }
+            }
+            return []
+        }
+        
+        return dayNames
+    }
+
 }
 
 extension CourseInfoViewController: UITableViewDataSource {

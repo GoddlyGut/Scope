@@ -18,6 +18,20 @@ enum DaysOfTheWeek: Int, Codable {
     case saturday
 }
 
+extension DaysOfTheWeek {
+    func capitalizedString() -> String {
+        switch self {
+        case .sunday: return "Sunday"
+        case .monday: return "Monday"
+        case .tuesday: return "Tuesday"
+        case .wednesday: return "Wednesday"
+        case .thursday: return "Thursday"
+        case .friday: return "Friday"
+        case .saturday: return "Saturday"
+        }
+    }
+}
+
 
 struct ScheduleType: Codable, Equatable, Hashable {
     var id: UUID
@@ -34,18 +48,21 @@ struct ScheduleType: Codable, Equatable, Hashable {
 
 
 struct SchoolDay: Codable {
-    let date: Date
+    let date: Date?
     let isHoliday: Bool
     let isHalfDay: Bool
-    let dayType: ScheduleType
-    
-    init(date: Date, isHoliday: Bool = false, isHalfDay: Bool = false, dayType: ScheduleType) {
+    var dayType: ScheduleType
+    var dayOfWeek: DaysOfTheWeek? // Optional to support one-off days
+
+    init(date: Date? = nil, isHoliday: Bool = false, isHalfDay: Bool = false, dayType: ScheduleType, dayOfWeek: DaysOfTheWeek? = nil) {
         self.date = date
         self.isHoliday = isHoliday
         self.isHalfDay = isHalfDay
         self.dayType = dayType
+        self.dayOfWeek = dayOfWeek
     }
 }
+
 
 struct Block: Codable {
     var blockNumber: Int

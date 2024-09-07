@@ -18,6 +18,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     var divider = UIView()
     var plusButton = UIButton()
     var settingsButton = UIButton()
+    var daysButton = UIButton()
     
     var delegate: BottomSheetDelegate?
     
@@ -55,6 +56,7 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
         tableView.automaticallyAdjustsScrollIndicatorInsets = false
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCountdown, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadTable), name: .didUpdateBlocks, object: nil)
     }
     
     override func viewDidLayoutSubviews() {
@@ -162,6 +164,13 @@ extension BottomSheetViewController {
         //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
         settingsButton.addTarget(self, action: #selector(settingsButtonPressed), for: .touchUpInside)
         stackView.addArrangedSubview(settingsButton)
+        
+        daysButton.tintColor = .pink
+        
+        daysButton.setImage(UIImage(systemName: "calendar", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
+        //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
+        daysButton.addTarget(self, action: #selector(daysButtonPressed), for: .touchUpInside)
+        stackView.addArrangedSubview(daysButton)
  
         
         
@@ -186,6 +195,10 @@ extension BottomSheetViewController {
     
     @objc func settingsButtonPressed() {
         present(UINavigationController(rootViewController: ScheduleManagerViewController()), animated: true)
+    }
+    
+    @objc func daysButtonPressed() {
+        present(UINavigationController(rootViewController: DayScheduleCustomizationViewController()), animated: true)
     }
     
     func layout() {
@@ -279,6 +292,13 @@ extension BottomSheetViewController {
     }
 
     
+    @objc func reloadTable(notification: Notification) {
+        
+        let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
+        self.sortedCourseBlocks = sortedCourseBlocksForToday
+        self.tableView.reloadData()
+    }
+    
     @objc func updateUI(notification: Notification) {
        
         DispatchQueue.main.async {
@@ -290,6 +310,8 @@ extension BottomSheetViewController {
             }
             
         }
+        
+        
         
         currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? "Unknown"
         

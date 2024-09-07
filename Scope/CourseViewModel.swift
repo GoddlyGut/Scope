@@ -26,6 +26,7 @@ class CourseViewModel {
                 startCountdownTimer()
         //initializeBlocks()
         //addSchoolDay()
+       
         
         
     }
@@ -39,22 +40,75 @@ class CourseViewModel {
         }
     }
     
-    func addSchoolDay() {
-        schoolDays = []
-        //let regularDayType = ScheduleType(name: "eDay")
-        let schoolDay = SchoolDay(date: Date(), isHoliday: false, isHalfDay: false, dayType: scheduleTypes.first(where: { $0.name == "Regular Day" }) ?? ScheduleType(name: "Regular Day"))
-        
-        schoolDays.append(schoolDay)
+    func scheduleType(on date: Date) -> ScheduleType? {
+        // 1. Check if there's a specific schedule for the date
+        let specificDay = schoolDays.first(where: { $0.date != nil && Calendar.current.isDate($0.date!, inSameDayAs: date) })
+        let specificSchedule = specificDay?.dayType
+
+        // 2. If no specific schedule, get the recurring schedule based on the day of the week
+        let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
+        let recurringDay = schoolDays.first(where: { $0.dayOfWeek == dayOfWeek && $0.date == nil })
+        let recurringSchedule = recurringDay?.dayType
+
+        // 3. Return both the specific schedule and recurring schedule
+        return (specificSchedule)
     }
+
+    func reccuringScheduleType(on date: Date) -> ScheduleType? {
+        let specificDay = schoolDays.first(where: { $0.date != nil && Calendar.current.isDate($0.date!, inSameDayAs: date) })
+        let specificSchedule = specificDay?.dayType
+
+        // 2. If no specific schedule, get the recurring schedule based on the day of the week
+        let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
+        let recurringDay = schoolDays.first(where: { $0.dayOfWeek == dayOfWeek && $0.date == nil })
+        let recurringSchedule = recurringDay?.dayType
+
+        // 3. Return both the specific schedule and recurring schedule
+        return recurringSchedule
+    }
+
+
+        
+        // Add or update a specific date with a schedule type
+        func setScheduleType(for date: Date, scheduleType: ScheduleType) {
+            if let index = schoolDays.firstIndex(where: { Calendar.current.isDate($0.date ?? Date.distantPast, inSameDayAs: date) }) {
+                schoolDays[index].dayType = scheduleType
+            } else {
+                let schoolDay = SchoolDay(date: date, dayType: scheduleType)
+                schoolDays.append(schoolDay)
+            }
+        }
+        
+        // Assign schedule type to recurring weekly days
+        func assignScheduleToRecurringDay(_ scheduleType: ScheduleType, for day: DaysOfTheWeek) {
+            if let index = schoolDays.firstIndex(where: { $0.dayOfWeek == day }) {
+                schoolDays[index].dayType = scheduleType
+            } else {
+                let schoolDay = SchoolDay(dayType: scheduleType, dayOfWeek: day)
+                schoolDays.append(schoolDay)
+            }
+        }
+    
+    
+//    func addSchoolDay() {
+//        
+//        //let regularDayType = ScheduleType(name: "eDay")
+//        let schoolDay = SchoolDay(date: Date(), isHoliday: false, isHalfDay: false, dayType: scheduleTypes.first(where: { $0.name == "Regular Day" }) ?? ScheduleType(name: "Regular Day"))
+//        
+//        schoolDays.append(schoolDay)
+//    }
     
     var scheduleTypes: [ScheduleType] = [] {
             didSet {
                 saveScheduleTypes()
+                
+                NotificationCenter.default.post(name: .didUpdateScheduleType, object: nil)
             }
         }
     
     var blocksByScheduleType: [UUID: [Block]] = [:] {
             didSet {
+                NotificationCenter.default.post(name: .didUpdateBlocks, object: nil)
                 saveBlocks()
             }
         }
@@ -117,10 +171,24 @@ class CourseViewModel {
             }
         }
         
-        func deleteScheduleType(id: UUID) {
-            scheduleTypes.removeAll { $0.id == id }
-            blocksByScheduleType[id] = nil
+    func deleteScheduleType(id: UUID) {
+        // Remove the schedule type
+        scheduleTypes.removeAll { $0.id == id }
+        blocksByScheduleType[id] = nil
+        
+        var courseList = courses
+        
+        
+        // Iterate over all courses and remove the schedule entry that uses the deleted schedule type
+        for courseIndex in courseList.indices {
+            courseList[courseIndex].schedule.removeAll { $0.scheduleType.id == id }
         }
+        
+        courses = courseList
+        
+        
+    }
+
         
         // Methods to manage blocks by schedule type
         func addBlock(to scheduleType: ScheduleType, block: Block) {
@@ -140,84 +208,118 @@ class CourseViewModel {
         // Remove the block from the specified schedule type
         blocksByScheduleType[scheduleType.id]?.remove(at: index)
         
+        var courseList = courses
+        
         // Iterate over all courses and their schedules to update the schedule type
-        for courseIndex in courses.indices {
-            for dayScheduleIndex in courses[courseIndex].schedule.indices {
-                if courses[courseIndex].schedule[dayScheduleIndex].scheduleType.id == scheduleType.id {
-                    // Set the scheduleType to .none
-                    courses[courseIndex].schedule[dayScheduleIndex].scheduleType = .none
+        for courseIndex in courseList.indices {
+            // Use `enumerated()` to safely remove items from the array while iterating
+            courseList[courseIndex].schedule.enumerated().forEach { dayScheduleIndex, daySchedule in
+                if daySchedule.scheduleType.id == scheduleType.id {
+                    // Remove the schedule block from the course
+                    courseList[courseIndex].schedule.remove(at: dayScheduleIndex)
                 }
             }
         }
+        
+        courses = courseList
+
         
         
     }
 
         
-        // Methods to save/load data
-        func saveScheduleTypes() {
-            do {
-                let data = try JSONEncoder().encode(scheduleTypes)
-                UserDefaults.standard.set(data, forKey: "scheduleTypes")
-            } catch {
-                print("Failed to save schedule types: \(error)")
-            }
-        }
+    func getDocumentsDirectory() -> URL {
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    }
+
+    func getFileURL(for fileName: String) -> URL {
+        return getDocumentsDirectory().appendingPathComponent(fileName)
+    }
+
+    func saveScheduleTypes() {
+        let fileURL = getFileURL(for: "scheduleTypes.json")
         
-        func loadScheduleTypes() {
-            if let data = UserDefaults.standard.data(forKey: "scheduleTypes") {
-                do {
-                    scheduleTypes = try JSONDecoder().decode([ScheduleType].self, from: data)
-                } catch {
-                    print("Failed to load schedule types: \(error)")
-                }
-            }
+        do {
+            let data = try JSONEncoder().encode(scheduleTypes)
+            try data.write(to: fileURL)
+            print("Successfully saved schedule types to \(fileURL)")
+        } catch {
+            print("Failed to save schedule types: \(error)")
         }
+    }
+
+    func loadScheduleTypes() {
+        let fileURL = getFileURL(for: "scheduleTypes.json")
         
-        func saveBlocks() {
-            do {
-                let data = try JSONEncoder().encode(blocksByScheduleType)
-                UserDefaults.standard.set(data, forKey: "blocksByScheduleType")
-            } catch {
-                print("Failed to save blocks: \(error)")
-            }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            scheduleTypes = try JSONDecoder().decode([ScheduleType].self, from: data)
+            print("Successfully loaded schedule types from \(fileURL)")
+        } catch {
+            print("Failed to load schedule types: \(error)")
         }
+    }
+
         
-        func loadBlocks() {
-            if let data = UserDefaults.standard.data(forKey: "blocksByScheduleType") {
-                do {
-                    blocksByScheduleType = try JSONDecoder().decode([UUID: [Block]].self, from: data)
-                } catch {
-                    print("Failed to load blocks: \(error)")
-                }
-            }
+    func saveBlocks() {
+        let fileURL = getFileURL(for: "blocksByScheduleType.json")
+        
+        do {
+            let data = try JSONEncoder().encode(blocksByScheduleType)
+            try data.write(to: fileURL)
+            print("Successfully saved blocks to \(fileURL)")
+        } catch {
+            print("Failed to save blocks: \(error)")
         }
+    }
+
+    func loadBlocks() {
+        let fileURL = getFileURL(for: "blocksByScheduleType.json")
+        
+        do {
+            let data = try Data(contentsOf: fileURL)
+            blocksByScheduleType = try JSONDecoder().decode([UUID: [Block]].self, from: data)
+            print("Successfully loaded blocks from \(fileURL)")
+        } catch {
+            print("Failed to load blocks: \(error)")
+        }
+    }
+
     
     func saveData() {
+        let coursesFileURL = getFileURL(for: "courses.json")
+        let schoolDaysFileURL = getFileURL(for: "schoolDays.json")
+        
         do {
             let coursesData = try JSONEncoder().encode(courses)
             let schoolDaysData = try JSONEncoder().encode(schoolDays)
             
-            UserDefaults.standard.set(coursesData, forKey: "courses")
-            UserDefaults.standard.set(schoolDaysData, forKey: "schoolDays")
+            try coursesData.write(to: coursesFileURL)
+            try schoolDaysData.write(to: schoolDaysFileURL)
+            print("Successfully saved data to files")
             
         } catch {
             print("Failed to save data: \(error)")
         }
     }
-    
+
     func loadData() {
-        if let coursesData = UserDefaults.standard.data(forKey: "courses"),
-           let schoolDaysData = UserDefaults.standard.data(forKey: "schoolDays") {
-            do {
-                courses = try JSONDecoder().decode([Course].self, from: coursesData)
-                schoolDays = try JSONDecoder().decode([SchoolDay].self, from: schoolDaysData)
-            } catch {
-                print("Failed to load data: \(error)")
-            }
+        let coursesFileURL = getFileURL(for: "courses.json")
+        let schoolDaysFileURL = getFileURL(for: "schoolDays.json")
+        
+        do {
+            let coursesData = try Data(contentsOf: coursesFileURL)
+            let schoolDaysData = try Data(contentsOf: schoolDaysFileURL)
+            
+            courses = try JSONDecoder().decode([Course].self, from: coursesData)
+            schoolDays = try JSONDecoder().decode([SchoolDay].self, from: schoolDaysData)
+            print("Successfully loaded data from files")
+            
+        } catch {
+            print("Failed to load data: \(error)")
         }
     }
-    
+
     var courses: [Course] = [] {
         didSet {
             NotificationCenter.default.post(name: .didUpdateCourseList, object: nil)
@@ -229,25 +331,31 @@ class CourseViewModel {
     
     
     func isSchoolRunning(on date: Date) -> Bool {
-            guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
-                return false
-            }
+        // Check for a specific schedule on the exact date first
+        if let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date ?? Date.distantPast, inSameDayAs: date) }) {
+            // If it's a specific date and it's marked as a holiday, return false
             return !schoolDay.isHoliday
         }
         
-        func isHalfDay(on date: Date) -> Bool {
-            guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
-                return false
-            }
-            return schoolDay.isHalfDay
+        // No specific date found, so check for recurring weekly days
+        let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
+        if let schoolDay = schoolDays.first(where: { $0.dayOfWeek == dayOfWeek }) {
+            // If it's a recurring day and it's marked as a holiday, return false
+            return !schoolDay.isHoliday
         }
-    
-    func scheduleType(on date: Date) -> ScheduleType? {
-        guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
-            return nil
-        }
-        return schoolDay.dayType
+        
+        // If no match found, assume school is not running
+        return false
     }
+
+        
+//        func isHalfDay(on date: Date) -> Bool {
+//            guard let schoolDay = schoolDays.first(where: { Calendar.current.isDate($0.date, inSameDayAs: date) }) else {
+//                return false
+//            }
+//            return schoolDay.isHalfDay
+//        }
+
         
     func coursesForToday(_ date: Date = Date()) -> [(course: Course, block: Block, dayType: ScheduleType)] {
         let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!

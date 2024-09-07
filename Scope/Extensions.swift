@@ -67,6 +67,8 @@ extension Date {
 extension Notification.Name {
     static let didUpdateCountdown = Notification.Name("didUpdateCountdown")
     static let didUpdateCourseList = Notification.Name("didUpdateCourseList")
+    static let didUpdateBlocks = Notification.Name("didUpdateBlocks")
+    static let didUpdateScheduleType = Notification.Name("didUpdateScheduleType")
 }
 
 
