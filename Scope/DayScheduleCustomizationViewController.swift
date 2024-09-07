@@ -233,52 +233,36 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
             let dayInfo = recurringDaysWithOverrides[indexPath.row]
             let day = dayInfo.0
 
-            // Show options to assign schedule, set to none, or delete
-            let alert = UIAlertController(title: "Day Options", message: "What would you like to do?", preferredStyle: .actionSheet)
-
-            // Assign schedule
-            alert.addAction(UIAlertAction(title: "Assign Schedule", style: .default) { _ in
-                self.assignScheduleType(to: day)
-            })
-
-            // Set to None
-            alert.addAction(UIAlertAction(title: "Set to None", style: .destructive) { _ in
-                self.viewModel.assignScheduleToRecurringDay(ScheduleType.none, for: day)
-                tableView.reloadData()
-            })
-
-            // Cancel action
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-            present(alert, animated: true)
+            // Present DayTypeSelectionViewController
+            let dayTypeSelectionVC = UINavigationController(rootViewController: DayTypeSelectionViewController(isEditting: true, edittingDay: day))
+            
+            presentHalfSheet(dayTypeSelectionVC)
+            
+            
         } else {
             // Specific day logic
             let specificDays = Set(viewModel.schoolDays.compactMap { $0.date }).sorted(by: { $0 < $1 })
             let specificDay = specificDays[indexPath.row]
 
-            let alert = UIAlertController(title: "Day Options", message: "What would you like to do?", preferredStyle: .actionSheet)
-
-            // Assign schedule
-            alert.addAction(UIAlertAction(title: "Assign Schedule", style: .default) { _ in
-                self.assignScheduleType(to: specificDay)
-            })
-
-            // Delete specific day
-            alert.addAction(UIAlertAction(title: "Delete Day", style: .destructive) { _ in
-                if let index = self.viewModel.schoolDays.firstIndex(where: { $0.date == specificDay }) {
-                    self.viewModel.schoolDays.remove(at: index)
-                    tableView.reloadData()
-                }
-            })
-
-            // Cancel action
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
-            present(alert, animated: true)
+            // Present DayTypeSelectionViewController for the specific date
+            let dayTypeSelectionVC = DayTypeSelectionViewController(isEditting: true)
+            dayTypeSelectionVC.selectedDate = specificDay // Pass the specific day
+            
+            let navigationController = UINavigationController(rootViewController: dayTypeSelectionVC)
+            
+            presentHalfSheet(navigationController)
+            
+           
         }
     }
 
-
+    func presentHalfSheet(_ viewController: UIViewController) {
+        if let sheet = viewController.sheetPresentationController {
+            sheet.detents = [.medium()]  // Set to medium or customize the height
+            sheet.prefersGrabberVisible = true  // Show grabber handle at the top
+        }
+        present(viewController, animated: true, completion: nil)
+    }
 
     func assignScheduleType(to day: DaysOfTheWeek) {
         let alert = UIAlertController(title: "Assign Schedule", message: "Choose a schedule for \(day.capitalizedString())", preferredStyle: .actionSheet)
@@ -341,10 +325,10 @@ class DatePickerViewController: UIViewController {
     @objc func nextButtonTapped() {
         // Call this method when the user taps the "Next" button
         let selectedDate = datePicker.date
-        onDateSelected?(selectedDate)
+        //onDateSelected?(selectedDate)
         
         // Push the DayTypeSelectionViewController
-        let dayTypeSelectionVC = DayTypeSelectionViewController()
+        let dayTypeSelectionVC = DayTypeSelectionViewController(isEditting: false)
         dayTypeSelectionVC.selectedDate = selectedDate // Pass the selected date to the next VC
         navigationController?.pushViewController(dayTypeSelectionVC, animated: true)
     }
@@ -355,7 +339,22 @@ class DayTypeSelectionViewController: UIViewController, UITableViewDataSource, U
     var tableView = UITableView()
    // Add your available day types here
     var selectedDate: Date? // The date passed from the DatePickerViewController
-
+    var edittingDay: DaysOfTheWeek?
+    var isEditting: Bool
+    
+    
+    init(isEditting: Bool, edittingDay: DaysOfTheWeek? = nil) {
+        self.edittingDay = edittingDay
+        self.isEditting = isEditting
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -385,30 +384,57 @@ class DayTypeSelectionViewController: UIViewController, UITableViewDataSource, U
 
     // UITableViewDataSource Methods
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return CourseViewModel.shared.scheduleTypes.count
+        return CourseViewModel.shared.scheduleTypes.count + (edittingDay != nil ? 1 : 0) // Add an extra row for "None" when editing recurring days
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "DayTypeCell", for: indexPath)
-        let dayType = CourseViewModel.shared.scheduleTypes[indexPath.row]
-        cell.textLabel?.text = dayType.name
+
+        if edittingDay != nil && indexPath.row == 0 {
+            // If editing a recurring day (edittingDay is not nil), show "None" as the first option
+            cell.textLabel?.text = "None"
+        } else {
+            // Adjust index only if editing and skip the "None" row
+            let adjustedIndex = (edittingDay != nil) ? indexPath.row - 1 : indexPath.row
+            if adjustedIndex < CourseViewModel.shared.scheduleTypes.count {
+                let dayType = CourseViewModel.shared.scheduleTypes[adjustedIndex]
+                cell.textLabel?.text = dayType.name
+            }
+        }
+
         return cell
     }
 
+
+
     // UITableViewDelegate Method
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedDayType = CourseViewModel.shared.scheduleTypes[indexPath.row]
-        
-        // Here, you can do whatever you need with the selected day type and the selected date
-        if let date = selectedDate {
-            print("Selected date: \(date), Selected day type: \(selectedDayType.name)")
-            CourseViewModel.shared.setScheduleType(for: date, scheduleType: selectedDayType)
-            // For example, you can assign the selected day type to the selected date
-            // (This depends on your view model logic)
+        if edittingDay != nil && indexPath.row == 0 {
+            // Handle "None" selection for recurring days
+            if let edittingDay = edittingDay {
+                CourseViewModel.shared.assignScheduleToRecurringDay(ScheduleType.none, for: edittingDay)
+            }
+        } else {
+            // Adjust the index if "None" is the first option (i.e., if edittingDay is not nil)
+            let adjustedIndex = (edittingDay != nil) ? indexPath.row - 1 : indexPath.row
+            
+            // Make sure adjustedIndex is within the bounds of the scheduleTypes array
+            if adjustedIndex >= 0 && adjustedIndex < CourseViewModel.shared.scheduleTypes.count {
+                let selectedDayType = CourseViewModel.shared.scheduleTypes[adjustedIndex]
+                
+                // Handle the schedule assignment
+                if let date = selectedDate {
+                    CourseViewModel.shared.setScheduleType(for: date, scheduleType: selectedDayType)
+                } else if let edittingDay = edittingDay {
+                    CourseViewModel.shared.assignScheduleToRecurringDay(selectedDayType, for: edittingDay)
+                }
+            }
         }
         
-        // After selection, you can pop or navigate away
+        // After selection, dismiss or pop the view controller
         dismiss(animated: true)
     }
+
+
 }
 

@@ -187,7 +187,7 @@ class CourseViewModel {
         
         courses = courseList
         
-        
+        schoolDays.removeAll { $0.dayType.id == id }
     }
 
         

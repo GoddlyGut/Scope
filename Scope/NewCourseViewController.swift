@@ -297,6 +297,8 @@ extension AddDayViewController {
     }
     
     @objc func add() {
+
+        
         // Access the dynamic schedule types from CourseViewModel
         let scheduleTypes = CourseViewModel.shared.scheduleTypes
         
@@ -306,6 +308,12 @@ extension AddDayViewController {
         
         // Get the selected block from the block picker
         let selectedBlockIndex = blockPicker.selectedRow(inComponent: 0)
+        if currentBlocks.isEmpty {
+            let alert = UIAlertController(title: "Error", message: "Please fill in all fields", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            present(alert, animated: true, completion: nil)
+            return
+        }
         let selectedBlock = currentBlocks[selectedBlockIndex]
         
         // Dismiss the view and call the delegate method with the selected schedule type and block number
@@ -374,7 +382,13 @@ extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
                 blockLabel.text = "Selected: None"
             }
             else {
-                selectedBlock = currentBlocks[row]
+                if !currentBlocks.isEmpty {
+                    selectedBlock = currentBlocks[row]
+                }
+                else {
+                    selectedBlock = nil
+                }
+                
                 blockLabel.text = "Selected: Block \(selectedBlock?.blockNumber ?? 0)"
             }
             
