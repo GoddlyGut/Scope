@@ -16,7 +16,7 @@ class ScheduleManagerViewController: UIViewController {
     
     let viewModel = CourseViewModel.shared
     var tableView = UITableView()
-    var addButton = UIButton(type: .system)
+    var closeButton = CloseButtonView()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,14 +28,10 @@ class ScheduleManagerViewController: UIViewController {
         title = "Manage Schedules"
         view.backgroundColor = .systemBackground
         
-        // Setup Add Button
-        addButton.setTitle("Add Schedule", for: .normal)
-        addButton.addTarget(self, action: #selector(addSchedule), for: .touchUpInside)
-        addButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(addButton)
+        
         
         // Setup TableView
-        tableView = UITableView(frame: .zero, style: .plain)
+        tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -46,51 +42,69 @@ class ScheduleManagerViewController: UIViewController {
         
         // Layout
         NSLayoutConstraint.activate([
-            addButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            addButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            
-            tableView.topAnchor.constraint(equalTo: addButton.bottomAnchor, constant: 20),
+ 
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditing))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditing))
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: closeButton)
+        
+        closeButton.circle.addTarget(self, action: #selector(close), for: .touchUpInside)
+    }
+    
+    
+    @objc func close() {
+        dismiss(animated: true)
     }
     
     // Toggle table view editing mode
     @objc func toggleEditing() {
         tableView.setEditing(!tableView.isEditing, animated: true)
-        navigationItem.rightBarButtonItem?.title = tableView.isEditing ? "Done" : "Edit"
+        navigationItem.leftBarButtonItem?.title = tableView.isEditing ? "Done" : "Edit"
     }
     
-    // Action to add a new schedule
     @objc func addSchedule() {
-        let alert = UIAlertController(title: "New Schedule", message: "Enter a name for the new schedule", preferredStyle: .alert)
-        alert.addTextField { (textField) in
-            textField.placeholder = "Schedule Name"
-        }
-
-        let addAction = UIAlertAction(title: "Add", style: .default) { [unowned self] _ in
-            if let scheduleName = alert.textFields?.first?.text, !scheduleName.isEmpty {
-                // Check if a schedule with the same name already exists
-                if self.viewModel.scheduleTypes.contains(where: { $0.name.lowercased() == scheduleName.lowercased() }) {
-                    // Show an error alert if the name already exists
-                    let errorAlert = UIAlertController(title: "Error", message: "A schedule with this name already exists. Please choose a different name.", preferredStyle: .alert)
-                    errorAlert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self.present(errorAlert, animated: true)
-                } else {
-                    // Create the schedule if the name is unique
-                    self.viewModel.createScheduleType(name: scheduleName)
-                    self.tableView.reloadData()
+        let addScheduleVC = AddScheduleViewController()
+        
+        // Handle the result from the modal
+        addScheduleVC.onScheduleAdded = { [weak self] scheduleName in
+            guard let self = self else { return }
+            
+            // Check if a schedule with the same name already exists
+            if self.viewModel.scheduleTypes.contains(where: { $0.name.lowercased() == scheduleName.lowercased() }) {
+                // Show an error alert if the name already exists
+                let errorAlert = UIAlertController(title: "Error", message: "A schedule with this name already exists. Please choose a different name.", preferredStyle: .alert)
+                errorAlert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+                    self.addSchedule()
+                })
+                self.present(errorAlert, animated: true)
+                
+            } else {
+                // Create the schedule if the name is unique
+                let newScheduleType = self.viewModel.createScheduleType(name: scheduleName)
+                self.tableView.reloadData()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.navigationController?.pushViewController(BlockCustomizationViewController(scheduleType: newScheduleType), animated: true)
                 }
+                
             }
         }
         
-        alert.addAction(addAction)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-        present(alert, animated: true)
+        let navigationController = UINavigationController(rootViewController: addScheduleVC)
+        // Present as a half-sheet
+        navigationController.modalPresentationStyle = .pageSheet
+        if let sheet = navigationController.sheetPresentationController {
+            sheet.detents = [.custom(resolver: { context in
+                return 200 // Define the height for the sheet here (in points)
+            })]  // You can also use .large() or a custom height
+            sheet.prefersGrabberVisible = true
+        }
+        present(navigationController, animated: true, completion: nil)
     }
+
 
     
     // Navigate to block customization for selected schedule
@@ -106,6 +120,43 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView()
+        headerView.backgroundColor = .systemGray6
+        
+        let titleLabel = UILabel()
+        titleLabel.text = "Schedules"
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(titleLabel)
+        
+        // Add a button next to the "Specific Days" title
+        let addButton = UIButton(type: .roundedRect)
+        addButton.setTitle("Add", for: .normal)
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        addButton.addTarget(self, action: #selector(addSchedule), for: .touchUpInside)
+        headerView.addSubview(addButton)
+        
+        // Layout the label and button within the header view
+        NSLayoutConstraint.activate([
+            // Layout the title label
+            titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
+            titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
+            
+            // Layout the Add button
+            addButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+            addButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor)
+        ])
+        
+        return headerView
+    }
+    
+    
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 28 // Adjust this value for more spacing
+    }
+
     
     // Number of rows in section
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -136,6 +187,82 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
     }
 }
 
+class AddScheduleViewController: UIViewController {
+    
+    let stackView = UIStackView()
+    let scheduleNameTextField = UITextField()
+    let addButton = UIButton(type: .system)
+    var onScheduleAdded: ((String) -> Void)?
+    var closeButton = CloseButtonView()
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        
+    }
+    
+    func setupUI() {
+        view.backgroundColor = .systemBackground
+        navigationItem.title = "Create Schedule"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: closeButton)
+        
+        closeButton.circle.addTarget(self, action: #selector(cancel), for: .touchUpInside)
+        
+        // Stack View settings
+        stackView.axis = .vertical
+        stackView.spacing = 20
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stackView)
+        
+        
+        // Schedule Name Text Field
+        scheduleNameTextField.borderStyle = .none
+        scheduleNameTextField.placeholder = "Enter schedule name"
+        scheduleNameTextField.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        stackView.addArrangedSubview(scheduleNameTextField)
+        
+        // Add Schedule Button
+                addButton.setTitle("Add Schedule", for: .normal)
+        addButton.backgroundColor = .pink
+                addButton.tintColor = .white
+                addButton.layer.cornerRadius = 8
+                addButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
+                addButton.addTarget(self, action: #selector(addSchedule), for: .touchUpInside)
+                stackView.addArrangedSubview(addButton)
+        
+
+        
+        // StackView Constraints
+        NSLayoutConstraint.activate([
+            stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+        ])
+    }
+    
+    
+    
+    @objc func addSchedule() {
+        guard let scheduleName = scheduleNameTextField.text, !scheduleName.isEmpty else {
+            // Show an error if the text field is empty
+            let alert = UIAlertController(title: "Error", message: "Please enter a schedule name", preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
+        // Call the completion handler to pass the schedule name back
+        
+        dismiss(animated: true, completion: nil)
+        onScheduleAdded?(scheduleName)
+    }
+    
+    @objc func cancel() {
+        dismiss(animated: true, completion: nil)
+    }
+}
+
+
 class BlockCustomizationViewController: UIViewController {
     
     var scheduleType: ScheduleType
@@ -159,11 +286,11 @@ class BlockCustomizationViewController: UIViewController {
     
     // Setup UI for block customization
     func setupUI() {
-        title = "Customize Blocks"
+        title = "Customize \(scheduleType.name)"
         view.backgroundColor = .systemBackground
         
         // Setup TableView
-        tableView = UITableView(frame: .zero, style: .plain)
+        tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -233,7 +360,7 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
-    
+
     // Number of rows in section
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.count ?? 0

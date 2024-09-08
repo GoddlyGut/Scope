@@ -34,7 +34,7 @@ class DayScheduleCustomizationViewController: UIViewController {
         view.backgroundColor = .systemBackground
 
         // Setup TableView
-        tableView = UITableView(frame: .zero, style: .plain)
+        tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -43,8 +43,6 @@ class DayScheduleCustomizationViewController: UIViewController {
         // Register UITableViewCell
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "DayCell")
 
-        // Add button to set schedule for specific dates
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Add Specific Day", style: .plain, target: self, action: #selector(addSpecificDay))
 
         // Layout TableView
         NSLayoutConstraint.activate([
@@ -279,12 +277,67 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
         present(alert, animated: true)
     }
     
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        return section == 0 ? "Regular Schedule" : "Specific Days"
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        // Create a view for the header
+        let headerView = UIView()
+        headerView.backgroundColor = .systemGray6
+
+        // Create a label for the title (Regular Schedule/Specific Days)
+        let titleLabel = UILabel()
+        titleLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerView.addSubview(titleLabel)
+        
+        if section == 0 {
+            titleLabel.text = "Regular Schedule"
+            NSLayoutConstraint.activate([
+                // Layout the title label
+                titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
+                titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),])
+            
+        } else {
+            titleLabel.text = "Specific Days"
+            
+            // Add a button next to the "Specific Days" title
+            let addButton = UIButton(type: .system)
+            addButton.setTitle("Add", for: .normal)
+            addButton.translatesAutoresizingMaskIntoConstraints = false
+            addButton.addTarget(self, action: #selector(addSpecificDay), for: .touchUpInside)
+            headerView.addSubview(addButton)
+            
+            // Layout the label and button within the header view
+            NSLayoutConstraint.activate([
+                // Layout the title label
+                titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
+                titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
+
+                // Layout the Add button
+                addButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+                addButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor)
+            ])
+        }
+        
+        return headerView
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 28 // Adjust this value for more spacing
     }
 
     
-    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete && indexPath.section == 1 {
+            // Update your data model first
+            viewModel.schoolDays.remove(at: indexPath.row)
+            
+            // Then, delete the row in the table view
+            //tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
+    }
+
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return indexPath.section == 1 // Allow editing only for section 1
+    }
 
 }
 

@@ -57,6 +57,8 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCountdown, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reloadTable), name: .didUpdateBlocks, object: nil)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadTable), name: .didUpdateCourseList, object: nil)
     }
     
     override func viewDidLayoutSubviews() {
@@ -408,7 +410,7 @@ extension BottomSheetViewController: UITableViewDelegate {
         
         func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
             let (course, block, dayType) = sortedCourseBlocks[indexPath.row]
-            present(UINavigationController(rootViewController: CourseInfoViewController(course: course, block: block, dayType: dayType)), animated: true)
+            present(UINavigationController(rootViewController: FullCourseListViewController()), animated: true)
             tableView.deselectRow(at: indexPath, animated: true)
         }
     

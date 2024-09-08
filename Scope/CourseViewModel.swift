@@ -161,9 +161,10 @@ class CourseViewModel {
         saveBlocks()
     }
     
-    func createScheduleType(name: String) {
+    func createScheduleType(name: String) -> ScheduleType {
             let newScheduleType = ScheduleType(name: name)
             scheduleTypes.append(newScheduleType)
+        return newScheduleType
         }
         
         func updateScheduleType(id: UUID, newName: String) {
