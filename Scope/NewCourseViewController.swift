@@ -95,11 +95,13 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
             
             if let index = CourseViewModel.shared.courses.firstIndex(where: { $0.id == course.id }) {
                 CourseViewModel.shared.courses[index] = course
+                NotificationCenter.default.post(name: .didUpdateCourseListFromCourseManager, object: nil)
             }
         } else {
             // Create new course
             let newCourse = Course(id: UUID(), name: courseName, instructor: instructorName, schedule: courseSchedule)
             CourseViewModel.shared.courses.append(newCourse)
+            NotificationCenter.default.post(name: .didUpdateCourseListFromCourseManager, object: nil)
         }
         
         
@@ -121,44 +123,51 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
         if indexPath.section == 0 {
             // For the first section (form fields)
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-            if indexPath.row == 0 {
-                // Course Name field
-                cell.textLabel?.text = "Course Name"
-                let textField = UITextField(frame: CGRect(x: 150, y: 0, width: 200, height: 44))
-                textField.placeholder = "Enter course name"
-                textField.text = courseName
-                textField.tag = 1000
-                textField.addTarget(self, action: #selector(textFieldChanged(_:)), for: .editingChanged)
-                cell.contentView.addSubview(textField)
-            } else if indexPath.row == 1 {
-                // Instructor Name field
-                cell.textLabel?.text = "Instructor"
-                let textField = UITextField(frame: CGRect(x: 150, y: 0, width: 200, height: 44))
-                textField.placeholder = "Enter instructor name"
-                textField.text = instructorName
-                textField.tag = 1001
+            
+            // Ensure the content view is cleared to avoid duplication
+            cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+            
+            var textField: UITextField!
+            if let existingTextField = cell.contentView.viewWithTag(1000 + indexPath.row) as? UITextField {
+                textField = existingTextField
+            } else {
+                textField = UITextField(frame: CGRect(x: 150, y: 0, width: 200, height: 44))
+                textField.tag = 1000 + indexPath.row
                 textField.addTarget(self, action: #selector(textFieldChanged(_:)), for: .editingChanged)
                 cell.contentView.addSubview(textField)
             }
+            
+            if indexPath.row == 0 {
+                // Course Name field
+                cell.textLabel?.text = "Course Name:"
+                textField.placeholder = "Enter course name"
+                textField.text = courseName
+            } else if indexPath.row == 1 {
+                // Instructor Name field
+                cell.textLabel?.text = "Instructor:"
+                textField.placeholder = "Enter instructor name"
+                textField.text = instructorName
+            }
+            
             return cell
         } else {
             if courseSchedule.isEmpty {
-                        let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
-                        cell.textLabel?.text = "None"
-                        cell.textLabel?.textColor = .gray
-                        cell.selectionStyle = .none
-                        return cell
-                    } else {
-                        let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
-                        let schedule = courseSchedule[indexPath.row]
-                        cell.configure(with: schedule)
-                        cell.textLabel?.textColor = .label
-                        cell.selectionStyle = .default // Re-enable selection if necessary
-                        return cell
-                    }
+                let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
+                cell.textLabel?.text = "None"
+                cell.textLabel?.textColor = .gray
+                cell.selectionStyle = .none
+                return cell
+            } else {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
+                let schedule = courseSchedule[indexPath.row]
+                cell.configure(with: schedule)
+                cell.textLabel?.textColor = .label
+                cell.selectionStyle = .default
+                return cell
+            }
         }
     }
-    
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if indexPath.section == 1 {
             // Programmatically trigger the swipe actions for the selected row
@@ -228,6 +237,7 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
                 // Update the course in the view model
                 if let index = CourseViewModel.shared.courses.firstIndex(where: { $0.id == course.id }) {
                     CourseViewModel.shared.courses[index] = course
+                    NotificationCenter.default.post(name: .didUpdateCourseListFromCourseManager, object: nil)
                 }
             }
             
@@ -259,6 +269,15 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
         }
     }
     
+    func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
+        // Disable selection for section 0
+        if indexPath.section == 0 {
+            return nil // Returning nil prevents the row from being selected
+        }
+        return indexPath // Enable selection for other sections
+    }
+
+    
     @objc func createNewCourse() {
         var vc = AddDayViewController(courseSchedule: courseSchedule)
         vc.delegate = self
@@ -266,30 +285,35 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
     }
     
     func addDay(scheduleType: ScheduleType, blockNumbers: [Int]) {
-        if var existingSchedule = courseSchedule.first(where: { $0.scheduleType.id == scheduleType.id }) {
-                    // If the day exists, check if the blockNumbers are already added
-                    let existingBlockNumbers = Set(existingSchedule.courseBlocks.map { $0.blockNumber })
-                    let newBlockNumbers = Set(blockNumbers)
+        if let index = courseSchedule.firstIndex(where: { $0.scheduleType.id == scheduleType.id }) {
+            // If the day exists, check if the blockNumbers are already added
+            var existingSchedule = courseSchedule[index]
+            let existingBlockNumbers = Set(existingSchedule.courseBlocks.map { $0.blockNumber })
+            let newBlockNumbers = Set(blockNumbers)
 
-                    // Add only the new blocks that are not present
-                    let additionalBlocks = newBlockNumbers.subtracting(existingBlockNumbers)
-                    let newCourseBlocks = additionalBlocks.map { CourseBlock(courseName: courseName, blockNumber: $0) }
-                    existingSchedule.courseBlocks.append(contentsOf: newCourseBlocks)
-                } else {
-                    // If the day doesn't exist, create a new schedule with the blocks
-                    let courseBlocks = blockNumbers.map { CourseBlock(courseName: courseName, blockNumber: $0) }
-                    let newSchedule = CourseDaySchedule(scheduleType: scheduleType, courseBlocks: courseBlocks)
-                    courseSchedule.append(newSchedule)
-                }
-                
-        if course != nil {
-            saveCourse()
+            // Add only the new blocks that are not present
+            let additionalBlocks = newBlockNumbers.subtracting(existingBlockNumbers)
+            let newCourseBlocks = additionalBlocks.map { CourseBlock(courseName: courseName, blockNumber: $0) }
+
+            existingSchedule.courseBlocks.append(contentsOf: newCourseBlocks)
+
+            // Update the courseSchedule with the modified schedule
+            courseSchedule[index] = existingSchedule
+        } else {
+            // If the day doesn't exist, create a new schedule with the blocks
+            let courseBlocks = blockNumbers.map { CourseBlock(courseName: courseName, blockNumber: $0) }
+            let newSchedule = CourseDaySchedule(scheduleType: scheduleType, courseBlocks: courseBlocks)
+            courseSchedule.append(newSchedule)
         }
-            
         
-                // Reload the table view to reflect the updated schedule
-            tableView.reloadData()
+        if course != nil {
+            saveCourse() // Update and save the course
+        }
+
+        // Reload the table view to reflect the updated schedule
+        tableView.reloadData()
     }
+
 }
 
 // MARK: - ScheduleCell for displaying schedule blocks

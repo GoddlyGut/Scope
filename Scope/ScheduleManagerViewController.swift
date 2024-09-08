@@ -21,6 +21,19 @@ class ScheduleManagerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        NotificationCenter.default.addObserver(self, selector: #selector(onScheduleTypeUpdate), name: .didUpdateScheduleTypeFromManager, object: nil)
+        
+    
+    
+
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func onScheduleTypeUpdate() {
+        tableView.reloadData()
     }
     
     // Setup the UI for the schedule manager
@@ -225,11 +238,15 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
     // Editing: Delete schedule
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
+            // First, update the data model by deleting the schedule
             let schedule = viewModel.scheduleTypes[indexPath.row]
             viewModel.deleteScheduleType(id: schedule.id)
+
+            // Then, delete the row from the table view
             tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
+
 }
 
 class AddScheduleViewController: UIViewController {
@@ -279,7 +296,7 @@ class AddScheduleViewController: UIViewController {
         // StackView Constraints
         NSLayoutConstraint.activate([
             stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
@@ -309,49 +326,47 @@ class AddScheduleViewController: UIViewController {
 
 
 class BlockCustomizationViewController: UIViewController {
-    
+
     var scheduleType: ScheduleType
     var tableView = UITableView()
     var availableBlockNumbers: [Int] = []
-    
+    var blockName: String = "" // Holds the block name
+
     init(scheduleType: ScheduleType) {
         self.scheduleType = scheduleType
+        blockName = scheduleType.name
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         refreshAvailableBlockNumbers() // Ensure availableBlockNumbers are updated
         isModalInPresentation = true
     }
-    
+
     // Setup UI for block customization
     func setupUI() {
         title = "Customize \(scheduleType.name)"
         view.backgroundColor = .systemBackground
-        
+
         // Setup TableView
         tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
-        
+
         // Register UITableViewCell
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BlockCell")
-        
-        // Add block button
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Add Block", style: .plain, target: self, action: #selector(addBlock))
-        
+        tableView.register(BlockCustomizationCell.self, forCellReuseIdentifier: "BlockCell")
+
+
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(close))
-        
-        
-        
+
         // Layout TableView
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -360,16 +375,36 @@ class BlockCustomizationViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
-    
+
     @objc func close() {
+        if let index = CourseViewModel.shared.scheduleTypes.firstIndex(where: { $0.id == scheduleType.id }) {
+            print(blockName)
+            CourseViewModel.shared.scheduleTypes[index].name = blockName
+            
+            // Iterate over all courses
+            for courseIndex in CourseViewModel.shared.courses.indices {
+                var course = CourseViewModel.shared.courses[courseIndex]
+                
+                // Find the schedule types used by this course that match the one being renamed
+                for dayScheduleIndex in course.schedule.indices {
+                    if course.schedule[dayScheduleIndex].scheduleType.id == scheduleType.id {
+                        // Update the name of the schedule type in the course
+                        CourseViewModel.shared.courses[courseIndex].schedule[dayScheduleIndex].scheduleType.name = blockName
+                    }
+                }
+            }
+            
+            
+        }
+        NotificationCenter.default.post(name: .didUpdateScheduleTypeFromManager, object: nil)
         dismiss(animated: true)
     }
-    
+
     // Refresh the available block numbers by removing the already used block numbers
     func refreshAvailableBlockNumbers(editingBlockNumber: Int? = nil) {
         let allBlockNumbers = Array(1...10) // Assume block numbers 1 to 10 are allowed
         let usedBlockNumbers = CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.map { $0.blockNumber } ?? []
-        
+
         // If we are editing, add the block number being edited back into the available numbers
         if let editingBlockNumber = editingBlockNumber {
             availableBlockNumbers = allBlockNumbers.filter { $0 == editingBlockNumber || !usedBlockNumbers.contains($0) }
@@ -378,7 +413,6 @@ class BlockCustomizationViewController: UIViewController {
         }
     }
 
-    
     // Add a new block using UIPickerView for block number and time selection
     @objc func addBlock() {
         refreshAvailableBlockNumbers() // Update the available block numbers before showing the picker
@@ -388,17 +422,15 @@ class BlockCustomizationViewController: UIViewController {
     }
 }
 
+// MARK: - TimePickerViewControllerDelegate
 extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
-    
     func didAddBlock(block: Block) {
         // Add the block and update the table
         CourseViewModel.shared.addBlock(to: scheduleType, block: block)
-        
         refreshAvailableBlockNumbers()
         tableView.reloadData()
     }
-    
-    // Edit an existing block
+
     func didEditBlock(block: Block, at index: Int) {
         // Update the block and refresh the table
         CourseViewModel.shared.updateBlock(in: scheduleType, at: index, with: block)
@@ -409,63 +441,201 @@ extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
 
 // MARK: - UITableView DataSource & Delegate
 extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDelegate {
-    
+
     // Number of sections
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 1
+        return 2 // One section for the text field and another for block list
     }
 
     // Number of rows in section
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.count ?? 0
+        if section == 0 {
+            return 1 // No rows in the text field section
+        } else {
+            return CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.count ?? 0
+        }
+    }
+
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        if section == 1 {
+            let headerView = UIView()
+            headerView.backgroundColor = .systemGray6
+            
+            // Title Label
+            let titleLabel = UILabel()
+            titleLabel.text = "Blocks"
+            titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
+            titleLabel.translatesAutoresizingMaskIntoConstraints = false
+            headerView.addSubview(titleLabel)
+            
+            // Add Button
+            let addButton = UIButton(type: .system)
+            addButton.setTitle("Add Blocks", for: .normal)
+            addButton.tintColor = .accent
+            addButton.addTarget(self, action: #selector(addBlock), for: .touchUpInside)
+            addButton.translatesAutoresizingMaskIntoConstraints = false
+            headerView.addSubview(addButton)
+            
+            // Layout constraints for title and button
+            NSLayoutConstraint.activate([
+                // Title label constraints
+                titleLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 16),
+                titleLabel.centerYAnchor.constraint(equalTo: headerView.centerYAnchor),
+                
+                // Add button constraints
+                addButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -16),
+                addButton.centerYAnchor.constraint(equalTo: headerView.centerYAnchor)
+            ])
+            
+            return headerView
+        }
+        return nil
+    }
+
+    // Height for section headers
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return section == 1 ? 28 : 0 // Set header height for second section
     }
     
-    // Cell for row
+    func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
+        // Disable selection for section 0
+        if indexPath.section == 0 {
+            return nil // Returning nil prevents the row from being selected
+        }
+        return indexPath // Enable selection for other sections
+    }
+
+
+    // Cell for row (for block list section)
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "BlockCell", for: indexPath)
-        if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
-            let block = blocks[indexPath.row]
-            cell.textLabel?.text = "Block \(block.blockNumber): \(block.startTime) - \(block.endTime)"
+        if indexPath.section == 0 {
+            let cell = UITableViewCell(style: .default, reuseIdentifier: "Cell")
+            cell.textLabel?.text = "Schedule Name:"
+            let textField = UITextField(frame: CGRect(x: 150, y: 0, width: 200, height: 44))
+            textField.placeholder = "Enter schedule name"
+            textField.text = blockName
+            textField.tag = 1000
+            textField.addTarget(self, action: #selector(textFieldChanged(_:)), for: .editingChanged)
+            cell.contentView.addSubview(textField)
+            return cell
+        } else {
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: "BlockCell", for: indexPath) as? BlockCustomizationCell else {
+                return UITableViewCell()
+            }
+
+            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
+                let block = blocks[indexPath.row]
+                if let startTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.startTime),
+                   let endTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.endTime) {
+                    cell.blockLabel.text = "Block \(block.blockNumber): \(startTime.formattedHMTime()) - \(endTime.formattedHMTime())"
+                } else {
+                    cell.blockLabel.text = "Block \(block.blockNumber): Time unavailable"
+                }
+            }
+
+            return cell
         }
-        return cell
     }
     
-    // Handle row deletion
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            CourseViewModel.shared.deleteBlock(from: scheduleType, at: indexPath.row)
-            refreshAvailableBlockNumbers()
-            tableView.deleteRows(at: [indexPath], with: .automatic)
+        if editingStyle == .delete && indexPath.section == 1 {
+            // Update your data model first
+            
+            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id], indexPath.row <= blocks.count {
+                
+                
+                CourseViewModel.shared.deleteBlock(from: scheduleType, at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
+
+            
+            // Then, delete the row in the table view
+            //tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
     
-    func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let editAction = UIContextualAction(style: .normal, title: "Edit") { [weak self] (action, view, completionHandler) in
-            guard let self = self, let blocks = CourseViewModel.shared.blocksByScheduleType[self.scheduleType.id] else { return }
-            let blockToEdit = blocks[indexPath.row]
-            
-            // Pass the block number to ensure it's available in the picker
-            self.refreshAvailableBlockNumbers(editingBlockNumber: blockToEdit.blockNumber)
-            
-            let pickerViewController = TimePickerViewController(scheduleType: self.scheduleType, availableBlockNumbers: self.availableBlockNumbers, blockToEdit: blockToEdit, blockIndex: indexPath.row)
-            pickerViewController.delegate = self
-            self.navigationController?.pushViewController(pickerViewController, animated: true)
-            completionHandler(true)
-        }
-        editAction.backgroundColor = .systemBlue
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] (action, view, completionHandler) in
-            CourseViewModel.shared.deleteBlock(from: self?.scheduleType ?? ScheduleType.none, at: indexPath.row)
-            self?.refreshAvailableBlockNumbers()
-            tableView.deleteRows(at: [indexPath], with: .automatic)
-            completionHandler(true)
+        if indexPath.section == 1 {
+            
+            // Retrieve the current block number for the selected block
+            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id], indexPath.row <= blocks.count {
+                let currentBlock = blocks[indexPath.row]
+                
+                var blockNumbersAvailable = availableBlockNumbers
+                blockNumbersAvailable.append(currentBlock.blockNumber)
+                blockNumbersAvailable = blockNumbersAvailable.sorted()
+                
+                // Pass the current block number along with available blocks to the picker view controller
+                let pickerViewController = TimePickerViewController(
+                    scheduleType: scheduleType,
+                    availableBlockNumbers: blockNumbersAvailable // Include current block number
+                )
+                
+                pickerViewController.delegate = self
+                navigationController?.pushViewController(pickerViewController, animated: true)
+            }
+            
+            tableView.deselectRow(at: indexPath, animated: true)
         }
-        
-        return UISwipeActionsConfiguration(actions: [editAction, deleteAction])
     }
 
-
+    
+    
+    @objc func textFieldChanged(_ textField: UITextField) {
+        if textField.tag == 1000 {
+            blockName = textField.text ?? ""
+        }
+    }
 }
+
+class BlockCustomizationCell: UITableViewCell {
+    let blockLabel = UILabel()
+    let chevronImageView = UIImageView()
+    
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        setupCell()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func setupCell() {
+        // Custom view for the cell's content
+        let customView = UIView()
+        customView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(customView)
+        
+        // Configure block label
+        blockLabel.translatesAutoresizingMaskIntoConstraints = false
+        blockLabel.textColor = .label
+        blockLabel.font = UIFont.systemFont(ofSize: 16)
+        customView.addSubview(blockLabel)
+        
+        // Configure chevron image view
+        chevronImageView.translatesAutoresizingMaskIntoConstraints = false
+        chevronImageView.image = UIImage(systemName: "chevron.right") // Use SF Symbol for chevron
+        chevronImageView.tintColor = .gray
+        customView.addSubview(chevronImageView)
+        
+        // Layout constraints
+        NSLayoutConstraint.activate([
+            customView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            customView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            customView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            customView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            
+            blockLabel.leadingAnchor.constraint(equalTo: customView.leadingAnchor, constant: 16),
+            blockLabel.centerYAnchor.constraint(equalTo: customView.centerYAnchor),
+            
+            chevronImageView.trailingAnchor.constraint(equalTo: customView.trailingAnchor, constant: -16),
+            chevronImageView.centerYAnchor.constraint(equalTo: customView.centerYAnchor)
+        ])
+    }
+}
+
 
 
 

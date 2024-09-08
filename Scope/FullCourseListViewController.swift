@@ -16,7 +16,7 @@ class FullCourseListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCourseList, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCourseListFromCourseManager, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(updateBlock), name: .didUpdateScheduleType, object: nil)
         
         setupTableView()
@@ -122,11 +122,15 @@ extension FullCourseListViewController: UITableViewDataSource, UITableViewDelega
             // First, update your data model by removing the item at the correct index
             let courseIndex = indexPath.row
             CourseViewModel.shared.courses.remove(at: courseIndex)
-
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+            
         }
     }
 
 
+    func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+            return true
+        }
 
     
     

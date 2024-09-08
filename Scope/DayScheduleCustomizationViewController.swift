@@ -102,6 +102,13 @@ class DayScheduleCustomizationViewController: UIViewController {
         formatter.dateStyle = .medium
         return formatter.string(from: date)
     }
+    
+    func formattedDateLong(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d"  // Format for Month Day, Year, and Day Name
+        return formatter.string(from: date)
+    }
+
 }
 
 extension DayScheduleCustomizationViewController: UITableViewDataSource, UITableViewDelegate {
@@ -157,9 +164,6 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
                 } else {
                     // Display the regular schedule day and indicate if there's an override
                     var cellText = "\(dayOfTheWeek.capitalizedString()): \(scheduleType.name)"
-                    if hasSpecificOverride {
-                        cellText += " (Override Exists)"
-                    }
                     cell.textLabel?.text = cellText
                 }
             } else {
@@ -170,7 +174,7 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
             let specificDays = viewModel.schoolDays.compactMap { $0.date }.sorted(by: { $0 < $1 })
             let specificDay = specificDays[indexPath.row]
             
-            let dateString = formattedDate(specificDay)
+            let dateString = formattedDateLong(specificDay)
             
             // Get the schedule type for the specific day
             let scheduleType = viewModel.schoolDays.first(where: { schoolDay in
@@ -389,7 +393,7 @@ class DatePickerViewController: UIViewController {
 
 class DayTypeSelectionViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
-    var tableView = UITableView()
+    var tableView = UITableView(frame: .zero, style: .insetGrouped)
    // Add your available day types here
     var selectedDate: Date? // The date passed from the DatePickerViewController
     var edittingDay: DaysOfTheWeek?
