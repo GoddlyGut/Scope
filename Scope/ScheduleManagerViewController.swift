@@ -110,7 +110,7 @@ class ScheduleManagerViewController: UIViewController {
     // Navigate to block customization for selected schedule
     func customizeBlocks(for scheduleType: ScheduleType) {
         let blockVC = BlockCustomizationViewController(scheduleType: scheduleType)
-        navigationController?.pushViewController(blockVC, animated: true)
+        present(UINavigationController(rootViewController: blockVC), animated: true)
     }
 }
 
@@ -166,15 +166,60 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
     // Cell for row
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath)
-        let schedule = viewModel.scheduleTypes[indexPath.row]
-        cell.textLabel?.text = schedule.name
+        
+        // Remove existing subviews (reuse behavior)
+        cell.contentView.subviews.forEach { $0.removeFromSuperview() }
+        
+        // Custom view for the cell's content
+        let customView = UIView()
+        customView.translatesAutoresizingMaskIntoConstraints = false
+        cell.contentView.addSubview(customView)
+        
+        // Create the block label
+        let scheduleLabel = UILabel()
+        scheduleLabel.translatesAutoresizingMaskIntoConstraints = false
+        scheduleLabel.textColor = .label
+        scheduleLabel.font = UIFont.systemFont(ofSize: 16)
+
+        scheduleLabel.text = "\(CourseViewModel.shared.scheduleTypes[indexPath.row].name)"
+        
+        
+        customView.addSubview(scheduleLabel)
+        
+        // Create the chevron image view
+        let chevronImageView = UIImageView()
+        chevronImageView.translatesAutoresizingMaskIntoConstraints = false
+        chevronImageView.image = UIImage(systemName: "chevron.right") // Use SF Symbol for chevron
+        chevronImageView.tintColor = .gray
+        
+        customView.addSubview(chevronImageView)
+        
+        // Layout Constraints
+        NSLayoutConstraint.activate([
+            // Custom view layout
+            customView.leadingAnchor.constraint(equalTo: cell.contentView.leadingAnchor),
+            customView.trailingAnchor.constraint(equalTo: cell.contentView.trailingAnchor),
+            customView.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
+            customView.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor),
+            
+            // Block label layout
+            scheduleLabel.leadingAnchor.constraint(equalTo: customView.leadingAnchor, constant: 16),
+            scheduleLabel.centerYAnchor.constraint(equalTo: customView.centerYAnchor),
+            
+            // Chevron layout
+            chevronImageView.trailingAnchor.constraint(equalTo: customView.trailingAnchor, constant: -16),
+            chevronImageView.centerYAnchor.constraint(equalTo: customView.centerYAnchor)
+        ])
+        
         return cell
     }
+
     
     // Handle row selection
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let schedule = viewModel.scheduleTypes[indexPath.row]
         customizeBlocks(for: schedule)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
     
     // Editing: Delete schedule
@@ -282,6 +327,7 @@ class BlockCustomizationViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         refreshAvailableBlockNumbers() // Ensure availableBlockNumbers are updated
+        isModalInPresentation = true
     }
     
     // Setup UI for block customization
@@ -300,7 +346,11 @@ class BlockCustomizationViewController: UIViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "BlockCell")
         
         // Add block button
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Add Block", style: .plain, target: self, action: #selector(addBlock))
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Add Block", style: .plain, target: self, action: #selector(addBlock))
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(close))
+        
+        
         
         // Layout TableView
         NSLayoutConstraint.activate([
@@ -309,6 +359,10 @@ class BlockCustomizationViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
+    }
+    
+    @objc func close() {
+        dismiss(animated: true)
     }
     
     // Refresh the available block numbers by removing the already used block numbers

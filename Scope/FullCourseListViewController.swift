@@ -139,11 +139,12 @@ extension FullCourseListViewController: UITableViewDataSource, UITableViewDelega
             
             // Initialize the CourseDetailViewController
         let detailVC = NewCourseViewController(course: selectedCourse)
-            
+        
             // Pass the selected course to the detail view controller
             
             // Push the CourseDetailViewController onto the navigation stack
-            navigationController?.pushViewController(detailVC, animated: true)
+        present(UINavigationController(rootViewController: detailVC), animated: true)
+            //navigationController?.pushViewController(detailVC, animated: true)
         }
 }
 

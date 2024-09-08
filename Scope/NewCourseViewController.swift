@@ -29,7 +29,7 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        isModalInPresentation = true
         setupTableView()
         configureNavigationBar()
         
@@ -71,12 +71,12 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
     
     @objc func doneButtonPressed() {
         saveCourse()
-        if course != nil {
-            navigationController?.popViewController(animated: true)
-        }
-        else {
+//        if course != nil {
+//            navigationController?.popViewController(animated: true)
+//        }
+//        else {
             dismiss(animated: true)
-        }
+        //}
     }
     
     @objc func saveCourse() {
@@ -111,11 +111,10 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if section == 0 {
-            return 2 // Course Name and Instructor fields
-        } else {
-            return courseSchedule.count
+        if section == 1 {
+            return courseSchedule.isEmpty ? 1 : courseSchedule.count
         }
+        return 2 // Assuming section 0 is for course name and instructor
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -143,11 +142,20 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
             }
             return cell
         } else {
-            // For the second section (schedule)
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
-            let schedule = courseSchedule[indexPath.row]
-            cell.configure(with: schedule)
-            return cell
+            if courseSchedule.isEmpty {
+                        let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
+                        cell.textLabel?.text = "None"
+                        cell.textLabel?.textColor = .gray
+                        cell.selectionStyle = .none
+                        return cell
+                    } else {
+                        let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath) as! ScheduleCell
+                        let schedule = courseSchedule[indexPath.row]
+                        cell.configure(with: schedule)
+                        cell.textLabel?.textColor = .label
+                        cell.selectionStyle = .default // Re-enable selection if necessary
+                        return cell
+                    }
         }
     }
     
@@ -162,7 +170,7 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
     }
 
     func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-        return indexPath.section == 1 // Allow editing only for section 1
+        return courseSchedule.isEmpty ? false : indexPath.section == 1 // Allow editing only for section 1
     }
 
     
@@ -223,12 +231,18 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
                 }
             }
             
-            // Perform batch update to delete the row from the table view
-            tableView.performBatchUpdates({
-                tableView.deleteRows(at: [indexPath], with: .automatic)
-            }, completion: nil)
+            // If courseSchedule is now empty, reload the section to show "None"
+            if courseSchedule.isEmpty {
+                tableView.reloadSections(IndexSet(integer: indexPath.section), with: .automatic)
+            } else {
+                // Perform batch update to delete the row from the table view
+                tableView.performBatchUpdates({
+                    tableView.deleteRows(at: [indexPath], with: .automatic)
+                }, completion: nil)
+            }
         }
     }
+
 
     
     //func
