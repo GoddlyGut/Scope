@@ -9,6 +9,8 @@ import UIKit
 
 class ViewController: UIViewController {
 
+    
+
     var centerStackView = UIStackView()
     var topLabel = UILabel()
     var currentCourseLabel = UILabel()
@@ -17,6 +19,7 @@ class ViewController: UIViewController {
     var classNameCapsule = UIStackView()
     var classNameLabel = UILabel()
     var classLengthLabel = UILabel()
+    
     
     private var progressRing = ProgressRingView()
 
@@ -41,6 +44,13 @@ class ViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         classNameCapsule.layer.cornerRadius = classNameCapsule.frame.height / 2
     }
+    
+    func onClosure() {
+        
+            self.presentSheet()
+           
+        
+    }
 }
 
 extension ViewController {
@@ -62,6 +72,7 @@ extension ViewController {
 
 
         self.navigationItem.title = ""
+
         
         view.backgroundColor = .systemBackground
         
@@ -148,6 +159,7 @@ extension ViewController {
         ])
     }
     
+
     @objc private func presentSheet() {
         let sheetViewController = BottomSheetViewController()
             //sheetViewController.modalPresentationStyle = .pageSheet
@@ -285,7 +297,19 @@ extension ViewController: BottomSheetDelegate {
     
 }
 
+class TabSheetPresentationController : UISheetPresentationController {
+    override func presentationTransitionWillBegin() {
+        super.presentationTransitionWillBegin()
 
+        // Update the container frame if there is a tab bar
+        if let tc = presentingViewController as? UITabBarController, let cv = containerView {
+            cv.clipsToBounds = true // ensure tab bar isn't covered
+            var frame = cv.frame
+            frame.size.height -= tc.tabBar.frame.height
+            cv.frame = frame
+        }
+    }
+}
 
 class ProgressRingView: UIView {
     private var progressLayer = CAShapeLayer()

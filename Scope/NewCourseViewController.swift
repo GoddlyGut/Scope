@@ -507,6 +507,7 @@ extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
                     .courseBlocks.map { $0.blockNumber } ?? []
                 
                 currentBlocks = blocks.filter { !usedBlockNumbers.contains($0.blockNumber) }
+                currentBlocks.sort { $0.blockNumber < $1.blockNumber }
                 
                 blockPicker.reloadAllComponents() // Reload block picker with the filtered blocks
             }

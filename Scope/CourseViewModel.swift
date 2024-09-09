@@ -200,11 +200,19 @@ class CourseViewModel {
             blocksByScheduleType[scheduleType.id]?.append(block)
         }
         
-        func updateBlock(in scheduleType: ScheduleType, at index: Int, with newBlock: Block) {
-            if let blocks = blocksByScheduleType[scheduleType.id], index < blocks.count {
-                blocksByScheduleType[scheduleType.id]?[index] = newBlock
+    func updateBlock(in scheduleType: ScheduleType, with newBlock: Block) {
+        // Retrieve the blocks array for the schedule type
+        if var blocks = blocksByScheduleType[scheduleType.id] {
+            // Find the index of the block that matches the block number
+            if let blockIndex = blocks.firstIndex(where: { $0.blockNumber == newBlock.blockNumber }) {
+                // Update the block at the found index
+                blocks[blockIndex] = newBlock
             }
+            // Assign the modified array back to the dictionary
+            blocksByScheduleType[scheduleType.id] = blocks
         }
+    }
+
         
     func deleteBlock(from scheduleType: ScheduleType, at index: Int) {
         // Remove the block from the specified schedule type

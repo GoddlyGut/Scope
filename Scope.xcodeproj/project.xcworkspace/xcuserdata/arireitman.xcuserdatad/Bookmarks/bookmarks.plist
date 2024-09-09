@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>top-level-items</key>
+	<array>
+		<dict>
+			<key>destination</key>
+			<dict>
+				<key>location-parameters</key>
+				<dict>
+					<key>EndingColumnNumber</key>
+					<string>0</string>
+					<key>EndingLineNumber</key>
+					<string>335</string>
+					<key>StartingColumnNumber</key>
+					<string>0</string>
+					<key>StartingLineNumber</key>
+					<string>334</string>
+					<key>Timestamp</key>
+					<string>747536298.90444</string>
+				</dict>
+				<key>rebasable-url</key>
+				<dict>
+					<key>base</key>
+					<string>workspace</string>
+					<key>payload</key>
+					<dict>
+						<key>relative-path</key>
+						<string>Scope/DayScheduleCustomizationViewController.swift</string>
+					</dict>
+				</dict>
+			</dict>
+			<key>text-context</key>
+			<dict>
+				<key>focused</key>
+				<string>            viewModel.schoolDays.removeAll(where: { $0.date == viewModel.schoolDays[indexPath.row].date })
+</string>
+				<key>leading</key>
+				<string>        if editingStyle == .delete &amp;&amp; indexPath.section == 1 {
+            // Update your data model first
+</string>
+				<key>trailing</key>
+				<string>            
+            // Then, delete the row in the table view
+            //tableView.deleteRows(at: [indexPath], with: .automatic)
+</string>
+			</dict>
+			<key>title</key>
+			<string>bug here</string>
+			<key>type</key>
+			<string>bookmark</string>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -8,7 +8,7 @@
 import UIKit
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UISheetPresentationControllerDelegate {
 
     var window: UIWindow?
     
@@ -16,7 +16,33 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window = UIWindow(frame: UIScreen.main.bounds)
         window?.makeKeyAndVisible()
         window?.backgroundColor = .systemBackground
-        window?.rootViewController = UINavigationController(rootViewController: ViewController())        
+        
+        let tabBarController = UITabBarController()
+        tabBarController.tabBar.isTranslucent = true
+                // Create instances of view controllers for each tab
+                let firstVC = ViewController()
+                let secondVC = FullCourseListViewController()
+                let thirdVC = SettingsViewController()
+
+                // Embed each view controller in a navigation controller
+                let firstNavVC = UINavigationController(rootViewController: firstVC)
+                let secondNavVC = UINavigationController(rootViewController: secondVC)
+                let thirdNavVC = UINavigationController(rootViewController: thirdVC)
+
+                // Assign tab bar items with titles and icons
+                firstNavVC.tabBarItem = UITabBarItem(title: "Home", image: UIImage(systemName: "house"), tag: 0)
+                secondNavVC.tabBarItem = UITabBarItem(title: "Courses", image: UIImage(systemName: "list.clipboard.fill"), tag: 1)
+                thirdNavVC.tabBarItem = UITabBarItem(title: "Settings", image: UIImage(systemName: "gear"), tag: 2)
+
+                // Set the view controllers for the tab bar
+                tabBarController.viewControllers = [firstNavVC, secondNavVC, thirdNavVC]
+        
+        
+
+        
+        
+        
+        window?.rootViewController = tabBarController
         return true
     }
 

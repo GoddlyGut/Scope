@@ -9,7 +9,7 @@ import UIKit
 
 protocol TimePickerViewControllerDelegate: AnyObject {
     func didAddBlock(block: Block)
-    func didEditBlock(block: Block, at index: Int)
+    func didEditBlock(block: Block)
 }
 
 class ScheduleManagerViewController: UIViewController {
@@ -431,9 +431,9 @@ extension BlockCustomizationViewController: TimePickerViewControllerDelegate {
         tableView.reloadData()
     }
 
-    func didEditBlock(block: Block, at index: Int) {
+    func didEditBlock(block: Block) {
         // Update the block and refresh the table
-        CourseViewModel.shared.updateBlock(in: scheduleType, at: index, with: block)
+        CourseViewModel.shared.updateBlock(in: scheduleType, with: block)
         refreshAvailableBlockNumbers()
         tableView.reloadData()
     }
@@ -523,7 +523,8 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
                 return UITableViewCell()
             }
 
-            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
+            if var blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
+                blocks.sort { $0.blockNumber < $1.blockNumber }
                 let block = blocks[indexPath.row]
                 if let startTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.startTime),
                    let endTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.endTime) {
@@ -559,7 +560,7 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
         if indexPath.section == 1 {
             
             // Retrieve the current block number for the selected block
-            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id], indexPath.row <= blocks.count {
+            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id]?.sorted(by: { $0.blockNumber < $1.blockNumber }), indexPath.row <= blocks.count {
                 let currentBlock = blocks[indexPath.row]
                 
                 var blockNumbersAvailable = availableBlockNumbers
@@ -569,7 +570,8 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
                 // Pass the current block number along with available blocks to the picker view controller
                 let pickerViewController = TimePickerViewController(
                     scheduleType: scheduleType,
-                    availableBlockNumbers: blockNumbersAvailable // Include current block number
+                    availableBlockNumbers: blockNumbersAvailable, // Include current block number,
+                    blockToEdit: currentBlock
                 )
                 
                 pickerViewController.delegate = self
@@ -664,6 +666,10 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
         
         if let first = availableBlockNumbers.first {
             self.selectedBlockNumber = first
+        }
+        if let block = blockToEdit {
+            startTime = block.startTime
+            endTime = block.endTime
         }
         self.blockToEdit = blockToEdit
         self.blockIndex = blockIndex
@@ -795,8 +801,8 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
         
         let newBlock = Block(blockNumber: blockNumber, startTime: startTime, endTime: endTime)
         
-        if let blockIndex = blockIndex { // Edit mode
-            delegate?.didEditBlock(block: newBlock, at: blockIndex)
+        if let block = blockToEdit { // Edit mode
+            delegate?.didEditBlock(block: newBlock)
         } else { // Add mode
             delegate?.didAddBlock(block: newBlock)
         }

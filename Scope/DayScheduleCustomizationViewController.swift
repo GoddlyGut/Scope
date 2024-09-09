@@ -332,7 +332,7 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete && indexPath.section == 1 {
             // Update your data model first
-            viewModel.schoolDays.remove(at: indexPath.row)
+            viewModel.schoolDays.removeAll(where: { $0.date == viewModel.schoolDays[indexPath.row].date })
             
             // Then, delete the row in the table view
             //tableView.deleteRows(at: [indexPath], with: .automatic)

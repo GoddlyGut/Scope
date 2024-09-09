@@ -9,6 +9,8 @@
 import UIKit
 
 class BottomSheetViewController: UIViewController, UITableViewDataSource {
+
+    
     let stackView = UIStackView()
     let label = UILabel()
     var topSheetView = UIView()
@@ -37,6 +39,8 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     var topSheetHeight: CGFloat = 70.0
     
     
+    var nothingStackView = UIStackView()
+    var nothingImageView = UIImageView()
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -69,6 +73,15 @@ class BottomSheetViewController: UIViewController, UITableViewDataSource {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+    
+
+    
+}
+
+extension BottomSheetViewController: UIViewControllerTransitioningDelegate {
+    func presentationController(forPresented presented: UIViewController, presenting: UIViewController?, source: UIViewController) -> UIPresentationController? {
+        return TabSheetPresentationController(presentedViewController: presented, presenting: presenting)
     }
 }
 
@@ -158,24 +171,32 @@ extension BottomSheetViewController {
         plusButton.setImage(UIImage(systemName: "plus", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
         plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
         
-        stackView.addArrangedSubview(plusButton)
+        
+        var subStackView = UIStackView()
+        
+        subStackView.axis = .horizontal
+        subStackView.alignment = .trailing
+        subStackView.spacing = 15
+        subStackView.backgroundColor = .clear
+        
+        subStackView.addArrangedSubview(plusButton)
         
         settingsButton.tintColor = .pink
         
         settingsButton.setImage(UIImage(systemName: "gear", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
         //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
         settingsButton.addTarget(self, action: #selector(settingsButtonPressed), for: .touchUpInside)
-        stackView.addArrangedSubview(settingsButton)
+        subStackView.addArrangedSubview(settingsButton)
         
         daysButton.tintColor = .pink
         
         daysButton.setImage(UIImage(systemName: "calendar", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
         //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
         daysButton.addTarget(self, action: #selector(daysButtonPressed), for: .touchUpInside)
-        stackView.addArrangedSubview(daysButton)
+        subStackView.addArrangedSubview(daysButton)
  
         
-        
+        stackView.addArrangedSubview(subStackView)
         
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.register(CourseCell.self, forCellReuseIdentifier: "CourseCell")
@@ -190,7 +211,22 @@ extension BottomSheetViewController {
         view.addSubview(stackView)
         
         
+        nothingStackView.translatesAutoresizingMaskIntoConstraints = false
+        nothingStackView.axis = .vertical
+        nothingStackView.alignment = .center
+        nothingStackView.spacing = 20
+        nothingStackView.isHidden = !CourseViewModel.shared.coursesForToday().isEmpty
         
+        nothingImageView.image = UIImage(systemName: "tray.fill")
+        nothingImageView.translatesAutoresizingMaskIntoConstraints = false
+        nothingStackView.addArrangedSubview(nothingImageView)
+        
+        var nothingLabel = UILabel()
+        nothingLabel.text = "No courses"
+        nothingLabel.font = UIFont(descriptor: .preferredFontDescriptor(withTextStyle: .headline), size: 23)
+        nothingStackView.addArrangedSubview(nothingLabel)
+        
+        view.addSubview(nothingStackView)
         
         
     }
@@ -215,7 +251,10 @@ extension BottomSheetViewController {
                         topSheetView.topAnchor.constraint(equalTo: stackView.bottomAnchor),
                         topSheetView.heightAnchor.constraint(equalToConstant: topSheetHeight),
                         
-            
+            nothingStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 100),
+            nothingStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            nothingImageView.widthAnchor.constraint(equalToConstant: 80),
+            nothingImageView.heightAnchor.constraint(equalToConstant: 80),
             
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -236,7 +275,7 @@ extension BottomSheetViewController {
         
             
             currentCourseProgress.widthAnchor.constraint(equalToConstant: 40),
-            currentCourseProgress.heightAnchor.constraint(equalToConstant: 40),
+
             
             currentCourseVerticalStackView.centerYAnchor.constraint(equalTo: currentCourseProgress.centerYAnchor),
             
@@ -304,6 +343,8 @@ extension BottomSheetViewController {
     @objc func updateUI(notification: Notification) {
        
         DispatchQueue.main.async {
+            
+            self.nothingStackView.isHidden = !CourseViewModel.shared.coursesForToday().isEmpty
             self.updateProgressRing()
             let sortedCourseBlocksForToday = CourseViewModel.shared.coursesForToday()
             if !self.areCourseBlocksEqual(self.sortedCourseBlocks, sortedCourseBlocksForToday) {

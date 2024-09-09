@@ -32,7 +32,7 @@ class FullCourseListViewController: UIViewController {
         coursesTableView.translatesAutoresizingMaskIntoConstraints = false
         coursesTableView.dataSource = self
         coursesTableView.delegate = self
-        
+//        coursesTableView.isEditing = true
         coursesTableView.register(FullCourseCell.self, forCellReuseIdentifier: "FullCourseCell")
     }
 }
@@ -75,7 +75,7 @@ extension FullCourseListViewController {
             stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
             newCourseButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            newCourseButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -40),
+            newCourseButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             newCourseButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             newCourseButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
@@ -127,6 +127,13 @@ extension FullCourseListViewController: UITableViewDataSource, UITableViewDelega
         }
     }
 
+    func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        var courses = CourseViewModel.shared.courses
+            let movedObject = courses[sourceIndexPath.row]
+        courses.remove(at: sourceIndexPath.row)
+        courses.insert(movedObject, at: destinationIndexPath.row)
+        CourseViewModel.shared.courses = courses
+        }
 
     func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
             return true
