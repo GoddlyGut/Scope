@@ -12,13 +12,13 @@
 					<key>EndingColumnNumber</key>
 					<string>0</string>
 					<key>EndingLineNumber</key>
-					<string>335</string>
+					<string>355</string>
 					<key>StartingColumnNumber</key>
 					<string>0</string>
 					<key>StartingLineNumber</key>
-					<string>334</string>
+					<string>354</string>
 					<key>Timestamp</key>
-					<string>747536298.90444</string>
+					<string>747610271.0237989</string>
 				</dict>
 				<key>rebasable-url</key>
 				<dict>
@@ -34,16 +34,16 @@
 			<key>text-context</key>
 			<dict>
 				<key>focused</key>
-				<string>            viewModel.schoolDays.removeAll(where: { $0.date == viewModel.schoolDays[indexPath.row].date })
+				<string>
 </string>
 				<key>leading</key>
-				<string>        if editingStyle == .delete &amp;&amp; indexPath.section == 1 {
-            // Update your data model first
+				<string>        }
+    }
 </string>
 				<key>trailing</key>
-				<string>            
-            // Then, delete the row in the table view
-            //tableView.deleteRows(at: [indexPath], with: .automatic)
+				<string>
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -&gt; Bool {
+        return indexPath.section == 1 // Allow editing only for section 1
 </string>
 			</dict>
 			<key>title</key>

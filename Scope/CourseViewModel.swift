@@ -46,13 +46,16 @@ class CourseViewModel {
         let specificDay = schoolDays.first(where: { $0.date != nil && Calendar.current.isDate($0.date!, inSameDayAs: date) })
         let specificSchedule = specificDay?.dayType
 
+        if let specificSchedule = specificSchedule {
+            return specificSchedule
+        }
         // 2. If no specific schedule, get the recurring schedule based on the day of the week
         let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
         let recurringDay = schoolDays.first(where: { $0.dayOfWeek == dayOfWeek && $0.date == nil })
         let recurringSchedule = recurringDay?.dayType
 
         // 3. Return both the specific schedule and recurring schedule
-        return (specificSchedule)
+        return (recurringSchedule)
     }
 
     func reccuringScheduleType(on date: Date) -> ScheduleType? {
@@ -78,6 +81,7 @@ class CourseViewModel {
                 let schoolDay = SchoolDay(date: date, dayType: scheduleType)
                 schoolDays.append(schoolDay)
             }
+            NotificationCenter.default.post(name: .didAddSchoolDays, object: nil)
         }
         
         // Assign schedule type to recurring weekly days
@@ -88,6 +92,7 @@ class CourseViewModel {
                 let schoolDay = SchoolDay(dayType: scheduleType, dayOfWeek: day)
                 schoolDays.append(schoolDay)
             }
+            NotificationCenter.default.post(name: .didAddSchoolDays, object: nil)
         }
     
     
@@ -103,13 +108,13 @@ class CourseViewModel {
             didSet {
                 saveScheduleTypes()
                 
-                NotificationCenter.default.post(name: .didUpdateScheduleType, object: nil)
+//                NotificationCenter.default.post(name: .didUpdateScheduleType, object: nil)
             }
         }
     
     var blocksByScheduleType: [UUID: [Block]] = [:] {
             didSet {
-                NotificationCenter.default.post(name: .didUpdateBlocks, object: nil)
+                //NotificationCenter.default.post(name: .didUpdateBlocks, object: nil)
                 saveBlocks()
             }
         }

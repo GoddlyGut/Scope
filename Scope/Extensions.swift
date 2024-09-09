@@ -72,6 +72,7 @@ extension Notification.Name {
     static let didUpdateScheduleType = Notification.Name("didUpdateScheduleType")
     static let didUpdateScheduleTypeFromManager = Notification.Name("didUpdateScheduleTypeFromManager")
     static let didUpdateSchoolDays = Notification.Name("didUpdateSchoolDays")
+    static let didAddSchoolDays = Notification.Name("didAddSchoolDays")
 }
 
 

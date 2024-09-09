@@ -16,7 +16,7 @@ class DayScheduleCustomizationViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        NotificationCenter.default.addObserver(self, selector: #selector(onSchoolDaysUpdate), name: .didUpdateSchoolDays, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(onSchoolDaysUpdate), name: .didAddSchoolDays, object: nil)
         
     }
     
@@ -331,13 +331,28 @@ extension DayScheduleCustomizationViewController: UITableViewDataSource, UITable
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete && indexPath.section == 1 {
-            // Update your data model first
-            viewModel.schoolDays.removeAll(where: { $0.date == viewModel.schoolDays[indexPath.row].date })
             
-            // Then, delete the row in the table view
-            //tableView.deleteRows(at: [indexPath], with: .automatic)
+            let specificDays = viewModel.schoolDays.compactMap { $0.date }.sorted(by: { $0 < $1 })
+            let specificDay = specificDays[indexPath.row]
+            
+            let dateString = formattedDateLong(specificDay)
+            
+            // Get the schedule type for the specific day
+            let scheduleType = viewModel.schoolDays.first(where: { schoolDay in
+                if let schoolDayDate = schoolDay.date {
+                    return Calendar.current.isDate(schoolDayDate, inSameDayAs: specificDay)
+                }
+                return false
+            })?.dayType ?? ScheduleType.none
+            
+            print(scheduleType.name)
+            
+            viewModel.schoolDays.removeAll(where: { $0.date == specificDay })
+            
+            tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
+
 
     func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return indexPath.section == 1 // Allow editing only for section 1
@@ -484,6 +499,7 @@ class DayTypeSelectionViewController: UIViewController, UITableViewDataSource, U
                     CourseViewModel.shared.setScheduleType(for: date, scheduleType: selectedDayType)
                 } else if let edittingDay = edittingDay {
                     CourseViewModel.shared.assignScheduleToRecurringDay(selectedDayType, for: edittingDay)
+                    
                 }
             }
         }
