@@ -30,7 +30,7 @@
 		DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewCourseViewController.swift; sourceTree = "<group>"; };
 		DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManagerViewController.swift; sourceTree = "<group>"; };
 		DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayScheduleCustomizationViewController.swift; sourceTree = "<group>"; };
-		DF338D832C27217D00E22348 /* Scope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Scope.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF338D832C27217D00E22348 /* Scope-Class Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scope-Class Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF338D862C27217D00E22348 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DF338D8A2C27217D00E22348 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		DF338D8F2C27217F00E22348 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -71,7 +71,7 @@
 		DF338D842C27217D00E22348 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				DF338D832C27217D00E22348 /* Scope.app */,
+				DF338D832C27217D00E22348 /* Scope-Class Tracker.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -105,9 +105,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		DF338D822C27217D00E22348 /* Scope */ = {
+		DF338D822C27217D00E22348 /* Scope-Class Tracker */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = DF338D972C27217F00E22348 /* Build configuration list for PBXNativeTarget "Scope" */;
+			buildConfigurationList = DF338D972C27217F00E22348 /* Build configuration list for PBXNativeTarget "Scope-Class Tracker" */;
 			buildPhases = (
 				DF338D7F2C27217D00E22348 /* Sources */,
 				DF338D802C27217D00E22348 /* Frameworks */,
@@ -117,9 +117,9 @@
 			);
 			dependencies = (
 			);
-			name = Scope;
+			name = "Scope-Class Tracker";
 			productName = Scope;
-			productReference = DF338D832C27217D00E22348 /* Scope.app */;
+			productReference = DF338D832C27217D00E22348 /* Scope-Class Tracker.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -150,7 +150,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				DF338D822C27217D00E22348 /* Scope */,
+				DF338D822C27217D00E22348 /* Scope-Class Tracker */,
 			);
 		};
 /* End PBXProject section */
@@ -334,11 +334,13 @@
 				DEVELOPMENT_TEAM = 44MV7A5JA6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scope/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Scope;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -363,11 +365,13 @@
 				DEVELOPMENT_TEAM = 44MV7A5JA6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scope/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Scope;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -393,7 +397,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		DF338D972C27217F00E22348 /* Build configuration list for PBXNativeTarget "Scope" */ = {
+		DF338D972C27217F00E22348 /* Build configuration list for PBXNativeTarget "Scope-Class Tracker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				DF338D982C27217F00E22348 /* Debug */,
