@@ -220,7 +220,7 @@ extension ViewController {
                 self.classNameCapsule.isHidden = true
                 self.timeRemaining.isHidden = true
                 self.noCoursesLeft.isHidden = false
-                self.navigationItem.title = CourseViewModel.shared.scheduleType(on: Date())?.name ?? ""
+                self.navigationItem.title = CourseViewModel.shared.scheduleType(on: Date())?.name ?? "None"
                 
             }
             else {

@@ -218,7 +218,12 @@ class FullCourseCell: UITableViewCell {
         
         // Get the names of the schedule types and join them into a string
         let days = course.schedule.map { $0.scheduleType.name }.joined(separator: ", ")
-        daysLabel.text = "Meets on: \(days)"
+        if days.isEmpty {
+            daysLabel.text = "Meets on: None"
+        }
+        else {
+            daysLabel.text = "Meets on: \(days)"
+        }
     }
 
 }

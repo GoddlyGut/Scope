@@ -61,9 +61,8 @@ class ScheduleManagerViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
-        
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditing))
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: closeButton)
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Edit", style: .plain, target: self, action: #selector(toggleEditing))
         
         closeButton.circle.addTarget(self, action: #selector(close), for: .touchUpInside)
     }
@@ -100,7 +99,7 @@ class ScheduleManagerViewController: UIViewController {
                 let newScheduleType = self.viewModel.createScheduleType(name: scheduleName)
                 self.tableView.reloadData()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.navigationController?.pushViewController(BlockCustomizationViewController(scheduleType: newScheduleType), animated: true)
+                    self.present(UINavigationController(rootViewController: BlockCustomizationViewController(scheduleType: newScheduleType)), animated: true)
                 }
                 
             }
@@ -171,11 +170,12 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
     }
 
     
-    // Number of rows in section
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.scheduleTypes.count
+        // If the array is empty, return 1 so we can show the "None" cell
+        return CourseViewModel.shared.scheduleTypes.isEmpty ? 1 : CourseViewModel.shared.scheduleTypes.count
     }
     
+    // Cell for row
     // Cell for row
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ScheduleCell", for: indexPath)
@@ -191,22 +191,31 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
         // Create the block label
         let scheduleLabel = UILabel()
         scheduleLabel.translatesAutoresizingMaskIntoConstraints = false
-        scheduleLabel.textColor = .label
         scheduleLabel.font = UIFont.systemFont(ofSize: 16)
 
-        scheduleLabel.text = "\(CourseViewModel.shared.scheduleTypes[indexPath.row].name)"
-        
+        // Check if the scheduleTypes array is empty and handle it accordingly
+        if CourseViewModel.shared.scheduleTypes.isEmpty {
+            scheduleLabel.text = "None"
+            scheduleLabel.textColor = .gray // Set the text color to gray for "None"
+        } else {
+            let schedule = CourseViewModel.shared.scheduleTypes[indexPath.row]
+            scheduleLabel.text = schedule.name
+            scheduleLabel.textColor = .label // Set the text color to default for regular cells
+        }
         
         customView.addSubview(scheduleLabel)
         
-        // Create the chevron image view
+        // Create the chevron image view (only for non-empty schedule)
         let chevronImageView = UIImageView()
         chevronImageView.translatesAutoresizingMaskIntoConstraints = false
         chevronImageView.image = UIImage(systemName: "chevron.right") // Use SF Symbol for chevron
         chevronImageView.tintColor = .gray
-        
-        customView.addSubview(chevronImageView)
-        
+
+        // Add the chevron only if there are schedule types
+        if !CourseViewModel.shared.scheduleTypes.isEmpty {
+            customView.addSubview(chevronImageView)
+        }
+
         // Layout Constraints
         NSLayoutConstraint.activate([
             // Custom view layout
@@ -217,23 +226,41 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
             
             // Block label layout
             scheduleLabel.leadingAnchor.constraint(equalTo: customView.leadingAnchor, constant: 16),
-            scheduleLabel.centerYAnchor.constraint(equalTo: customView.centerYAnchor),
-            
-            // Chevron layout
-            chevronImageView.trailingAnchor.constraint(equalTo: customView.trailingAnchor, constant: -16),
-            chevronImageView.centerYAnchor.constraint(equalTo: customView.centerYAnchor)
+            scheduleLabel.centerYAnchor.constraint(equalTo: customView.centerYAnchor)
         ])
+        
+        // Add chevron constraints only if there are schedule types
+        if !CourseViewModel.shared.scheduleTypes.isEmpty {
+            NSLayoutConstraint.activate([
+                chevronImageView.trailingAnchor.constraint(equalTo: customView.trailingAnchor, constant: -16),
+                chevronImageView.centerYAnchor.constraint(equalTo: customView.centerYAnchor)
+            ])
+        }
         
         return cell
     }
 
+
     
     // Handle row selection
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let schedule = viewModel.scheduleTypes[indexPath.row]
-        customizeBlocks(for: schedule)
-        tableView.deselectRow(at: indexPath, animated: true)
+        if !viewModel.scheduleTypes.isEmpty {
+            let schedule = viewModel.scheduleTypes[indexPath.row]
+            customizeBlocks(for: schedule)
+            tableView.deselectRow(at: indexPath, animated: true)
+        }
+        
     }
+    
+    func tableView(_ tableView: UITableView, willSelectRowAt indexPath: IndexPath) -> IndexPath? {
+        // If the scheduleTypes array is empty, return nil to prevent selection
+        if CourseViewModel.shared.scheduleTypes.isEmpty {
+            return nil
+        }
+        // Allow selection otherwise
+        return indexPath
+    }
+
     
     // Editing: Delete schedule
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
@@ -242,8 +269,9 @@ extension ScheduleManagerViewController: UITableViewDataSource, UITableViewDeleg
             let schedule = viewModel.scheduleTypes[indexPath.row]
             viewModel.deleteScheduleType(id: schedule.id)
 
+            tableView.reloadData()
             // Then, delete the row from the table view
-            tableView.deleteRows(at: [indexPath], with: .automatic)
+            //tableView.deleteRows(at: [indexPath], with: .automatic)
         }
     }
 
@@ -351,7 +379,8 @@ class BlockCustomizationViewController: UIViewController {
 
     // Setup UI for block customization
     func setupUI() {
-        title = "Customize \(scheduleType.name)"
+        title = "Customize \"\(scheduleType.name)\""
+
         view.backgroundColor = .systemBackground
 
         // Setup TableView
@@ -506,9 +535,9 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
     }
 
 
-    // Cell for row (for block list section)
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.section == 0 {
+            // Section 0: Schedule Name input field
             let cell = UITableViewCell(style: .default, reuseIdentifier: "Cell")
             cell.textLabel?.text = "Schedule Name:"
             let textField = UITextField(frame: CGRect(x: 150, y: 0, width: 200, height: 44))
@@ -519,24 +548,29 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
             cell.contentView.addSubview(textField)
             return cell
         } else {
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: "BlockCell", for: indexPath) as? BlockCustomizationCell else {
-                return UITableViewCell()
-            }
-
-            if var blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] {
-                blocks.sort { $0.blockNumber < $1.blockNumber }
-                let block = blocks[indexPath.row]
+            // Section 1: Block list or "None" if empty
+            let cell = tableView.dequeueReusableCell(withIdentifier: "BlockCell", for: indexPath) as! BlockCustomizationCell
+            
+            // Fetch blocks for the current scheduleType
+            if let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id], !blocks.isEmpty {
+                // Sort the blocks by block number
+                let sortedBlocks = blocks.sorted { $0.blockNumber < $1.blockNumber }
+                let block = sortedBlocks[indexPath.row]
+                
+                // Configure block information
                 if let startTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.startTime),
                    let endTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: block.endTime) {
                     cell.blockLabel.text = "Block \(block.blockNumber): \(startTime.formattedHMTime()) - \(endTime.formattedHMTime())"
                 } else {
                     cell.blockLabel.text = "Block \(block.blockNumber): Time unavailable"
                 }
+                
             }
-
+            
             return cell
         }
     }
+
     
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete && indexPath.section == 1 {
@@ -582,7 +616,17 @@ extension BlockCustomizationViewController: UITableViewDataSource, UITableViewDe
         }
     }
 
-    
+    func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        if indexPath.section == 1 {
+            // Check if the list is empty and if "None" is being displayed
+            let blocks = CourseViewModel.shared.blocksByScheduleType[scheduleType.id] ?? []
+            
+            // If there are no blocks, return false to disable editing
+            return !blocks.isEmpty
+        }
+        return false // Disable editing for other sections
+    }
+
     
     @objc func textFieldChanged(_ textField: UITextField) {
         if textField.tag == 1000 {
@@ -654,6 +698,7 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
     let blockPicker = UIPickerView()
     let startTimePicker = UIDatePicker()
     let endTimePicker = UIDatePicker()
+    var pickerStackView = UIStackView()
     
     var selectedBlockNumber: Int?
     var startTime: String = "08:00"
@@ -713,25 +758,45 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
         blockPicker.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(blockPicker)
         
+        pickerStackView.translatesAutoresizingMaskIntoConstraints = false
+        pickerStackView.axis = .horizontal
+        pickerStackView.spacing = 10
+        
+        
+        
         // Setup UIDatePicker for start time selection
         startTimePicker.datePickerMode = .time
         startTimePicker.addTarget(self, action: #selector(startTimeChanged), for: .valueChanged)
         startTimePicker.translatesAutoresizingMaskIntoConstraints = false
         startTimePicker.date = getDate(from: startTime) ?? Date()
-        view.addSubview(startTimePicker)
+        pickerStackView.addArrangedSubview(startTimePicker)
+        
+        var toLabel = UILabel()
+        toLabel.text = "to"
+        pickerStackView.addArrangedSubview(toLabel)
         
         // Setup UIDatePicker for end time selection
         endTimePicker.datePickerMode = .time
         endTimePicker.addTarget(self, action: #selector(endTimeChanged), for: .valueChanged)
         endTimePicker.translatesAutoresizingMaskIntoConstraints = false
         endTimePicker.date = getDate(from: endTime) ?? Date()
-        view.addSubview(endTimePicker)
+        pickerStackView.addArrangedSubview(endTimePicker)
+        
+        view.addSubview(pickerStackView)
         
         // Add a button to save the block
         let saveButton = UIButton(type: .system)
         saveButton.setTitle("Save Block", for: .normal)
         saveButton.addTarget(self, action: #selector(saveBlock), for: .touchUpInside)
         saveButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        saveButton.backgroundColor = .pink
+        saveButton.tintColor = .white
+        saveButton.layer.cornerRadius = 8
+        saveButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
+    
+        
+        
         view.addSubview(saveButton)
         
         // Layout UI elements
@@ -741,14 +806,17 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
             blockPicker.widthAnchor.constraint(equalToConstant: 200),
             blockPicker.heightAnchor.constraint(equalToConstant: 100),
             
-            startTimePicker.topAnchor.constraint(equalTo: blockPicker.bottomAnchor, constant: 20),
-            startTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pickerStackView.topAnchor.constraint(equalTo: blockPicker.bottomAnchor, constant: 20),
+            pickerStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
-            endTimePicker.topAnchor.constraint(equalTo: startTimePicker.bottomAnchor, constant: 20),
-            endTimePicker.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+           
             
-            saveButton.topAnchor.constraint(equalTo: endTimePicker.bottomAnchor, constant: 20),
-            saveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            saveButton.topAnchor.constraint(equalTo: pickerStackView.bottomAnchor, constant: 40),
+            saveButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            saveButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            saveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            
+            
         ])
     }
     

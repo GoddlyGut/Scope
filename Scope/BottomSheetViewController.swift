@@ -188,12 +188,6 @@ extension BottomSheetViewController {
         settingsButton.addTarget(self, action: #selector(settingsButtonPressed), for: .touchUpInside)
         subStackView.addArrangedSubview(settingsButton)
         
-        daysButton.tintColor = .pink
-        
-        daysButton.setImage(UIImage(systemName: "calendar", withConfiguration: UIImage.SymbolConfiguration(weight: .bold))?.withRenderingMode(.alwaysTemplate), for: .normal)
-        //plusButton.addTarget(self, action: #selector(createNewCourse), for: .touchUpInside)
-        daysButton.addTarget(self, action: #selector(daysButtonPressed), for: .touchUpInside)
-        subStackView.addArrangedSubview(daysButton)
  
         
         stackView.addArrangedSubview(subStackView)
@@ -214,7 +208,7 @@ extension BottomSheetViewController {
         nothingStackView.translatesAutoresizingMaskIntoConstraints = false
         nothingStackView.axis = .vertical
         nothingStackView.alignment = .center
-        nothingStackView.spacing = 20
+        nothingStackView.spacing = 12
         nothingStackView.isHidden = !CourseViewModel.shared.coursesForToday().isEmpty
         
         nothingImageView.image = UIImage(systemName: "tray.fill")
@@ -232,7 +226,7 @@ extension BottomSheetViewController {
     }
     
     @objc func settingsButtonPressed() {
-        present(UINavigationController(rootViewController: ScheduleManagerViewController()), animated: true)
+        present(UINavigationController(rootViewController: SettingsViewController()), animated: true)
     }
     
     @objc func daysButtonPressed() {
@@ -253,8 +247,8 @@ extension BottomSheetViewController {
                         
             nothingStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 100),
             nothingStackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            nothingImageView.widthAnchor.constraint(equalToConstant: 80),
-            nothingImageView.heightAnchor.constraint(equalToConstant: 80),
+            nothingImageView.widthAnchor.constraint(equalToConstant: 40),
+            nothingImageView.heightAnchor.constraint(equalToConstant: 40),
             
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -358,25 +352,40 @@ extension BottomSheetViewController {
         
         currentCourseNameLabel.text = CourseViewModel.shared.currentCourse()?.course.name ?? "Unknown"
         
-         
-        if CourseViewModel.shared.currentCourse() == nil {
-            if self.topSheetView.transform.ty != -topSheetHeight {
-                UIView.animate(withDuration: 0.15) {
-                    self.topSheetView.transform.ty = -self.topSheetHeight
-                    self.tableView.contentInset.top = self.stackViewHeight
+
+        if let course = CourseViewModel.shared.currentOrNextCourse() {
+            if course.isOngoing {
+                if self.topSheetView.transform.ty != 0 && isFullyShown {
+                    UIView.animate(withDuration: 0.2) {
+                        self.topSheetView.transform.ty = 0
+                        self.tableView.contentInset.top = 115
+                    }
+                    
+                    
                 }
             }
-            
-        }
-        else {
-            
-            if self.topSheetView.transform.ty != 0 && isFullyShown {
-                UIView.animate(withDuration: 0.2) {
-                    self.topSheetView.transform.ty = 0
-                    self.tableView.contentInset.top = 115
+                
+                
+                else {
+                    if self.topSheetView.transform.ty != -topSheetHeight {
+                        UIView.animate(withDuration: 0.15) {
+                            self.topSheetView.transform.ty = -self.topSheetHeight
+                            self.tableView.contentInset.top = self.stackViewHeight
+                        }
+                    }
                 }
             }
-        }
+            else {
+                if self.topSheetView.transform.ty != -topSheetHeight {
+                    UIView.animate(withDuration: 0.15) {
+                        self.topSheetView.transform.ty = -self.topSheetHeight
+                        self.tableView.contentInset.top = self.stackViewHeight
+                    }
+                }
+            }
+        
+            
+        
     }
     
     

@@ -397,6 +397,23 @@ class AddDayViewController: UIViewController {
     }
     
     private func setupPickers() {
+        var selectedDay: ScheduleType!
+        if CourseViewModel.shared.scheduleTypes.isEmpty {
+            selectedDay = ScheduleType.none
+        }
+        else {
+            selectedDay = CourseViewModel.shared.scheduleTypes[0]
+        }
+        
+        // Filter blocks that have already been used
+        let blocks = CourseViewModel.shared.blocksByScheduleType[selectedDay.id] ?? []
+        let usedBlockNumbers = courseSchedule
+            .first(where: { $0.scheduleType.id == selectedDay.id })?
+            .courseBlocks.map { $0.blockNumber } ?? []
+        
+        currentBlocks = blocks.filter { !usedBlockNumbers.contains($0.blockNumber) }
+        currentBlocks.sort { $0.blockNumber < $1.blockNumber }
+        
         schedulePicker.dataSource = self
         schedulePicker.delegate = self
         
@@ -487,7 +504,20 @@ extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
         if pickerView == schedulePicker {
             return CourseViewModel.shared.scheduleTypes.isEmpty ? "None" : CourseViewModel.shared.scheduleTypes[row].name
         } else if pickerView == blockPicker {
-            return currentBlocks.isEmpty ? "None" : "Block \(currentBlocks[row].blockNumber): \(currentBlocks[row].startTime) - \(currentBlocks[row].endTime)"
+            if currentBlocks.isEmpty {
+                return "None"
+            }
+            else {
+                if let startTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: currentBlocks[row].startTime)?.formattedHMTime(),
+                   let endTime = CourseViewModel.shared.combineDateAndTime(date: Date(), time: currentBlocks[row].endTime)?.formattedHMTime() {
+                    return currentBlocks.isEmpty ? "None" : "Block \(currentBlocks[row].blockNumber): \(startTime) - \(endTime)"
+                } else {
+                    return currentBlocks.isEmpty ? "None" : "Block \(currentBlocks[row].blockNumber): \(currentBlocks[row].startTime) - \(currentBlocks[row].endTime)"
+                }
+            }
+            
+            
+            
         }
         return nil
     }

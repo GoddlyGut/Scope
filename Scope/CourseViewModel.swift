@@ -37,7 +37,7 @@ class CourseViewModel {
      {
         didSet {
             saveData()
-            NotificationCenter.default.post(name: .didUpdateSchoolDays, object: nil)
+            //NotificationCenter.default.post(name: .didUpdateSchoolDays, object: nil)
         }
     }
     
@@ -414,12 +414,13 @@ class CourseViewModel {
     func currentCourse(currentDate: Date = Date()) -> (course: Course, block: Block)? {
         let now = currentDate
         
+        // Use a more precise time format including seconds
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
+        formatter.dateFormat = "HH:mm:ss"
         
         // Get the current time as a Date object
-        let currentTime = formatter.string(from: now)
-        guard let currentDateTime = formatter.date(from: currentTime) else {
+        let currentTimeString = formatter.string(from: now)
+        guard let currentDateTime = formatter.date(from: currentTimeString) else {
             print("Error converting current time to Date object")
             return nil
         }
@@ -439,11 +440,12 @@ class CourseViewModel {
                 // Check if the current time falls within any of the blocks for this course
                 for courseBlock in daySchedule.courseBlocks {
                     if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
-                        // Convert block start and end times to Date objects
-                        if let blockStartTime = formatter.date(from: block.startTime),
-                           let blockEndTime = formatter.date(from: block.endTime) {
+                        // Convert block start and end times to Date objects (with seconds)
+                        if let blockStartTime = formatter.date(from: "\(block.startTime):00"),
+                           let blockEndTime = formatter.date(from: "\(block.endTime):00") {
                             
-                            if currentDateTime >= blockStartTime && currentDateTime <= blockEndTime {
+                            // Ensure current time is strictly within block start and end time
+                            if currentDateTime >= blockStartTime && currentDateTime < blockEndTime {
                                 return (course, block)
                             }
                         } else {
@@ -455,6 +457,7 @@ class CourseViewModel {
         }
         return nil
     }
+
 
 
 
@@ -597,6 +600,51 @@ class CourseViewModel {
 
         
         return date
+    }
+
+    func deleteAllData() {
+        // Delete all courses, schedule types, blocks, and school days
+        courses.removeAll()
+        scheduleTypes.removeAll()
+        blocksByScheduleType.removeAll()
+        schoolDays.removeAll()
+        
+        // Save the changes
+        saveData()
+        saveScheduleTypes()
+        saveBlocks()
+        
+        print("All data deleted")
+    }
+
+    func deleteCurrentSchedule() {
+        // Assuming you want to delete only the schoolDays (which represent schedules)
+        schoolDays.removeAll()
+        
+        // Save the changes
+        saveData()
+        
+        print("Current schedule deleted")
+    }
+
+    func deleteAllScheduleTypes() {
+        // Remove all schedule types and associated blocks
+        for schedule in scheduleTypes {
+            deleteScheduleType(id: schedule.id)
+        }
+        
+        
+        print("All schedule types deleted")
+    }
+
+    func deleteAllCourses() {
+        // Remove all courses
+        courses.removeAll()
+        
+        // Save the changes
+        saveData()
+        
+        print("All courses deleted")
     }
 
 }

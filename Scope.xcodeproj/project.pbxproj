@@ -17,6 +17,7 @@
 		DF65121F2C53F175009ADB8E /* CourseInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF65121E2C53F175009ADB8E /* CourseInfoViewController.swift */; };
 		DF6512212C53F2A5009ADB8E /* Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6512202C53F2A5009ADB8E /* Delegates.swift */; };
 		DF677ED42C8E5DB7009A407E /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */; };
+		DF677ED62C8FBF54009A407E /* DataManagementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */; };
 		DF7587E02C76EA3300EBAFCB /* FullCourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7587DF2C76EA3300EBAFCB /* FullCourseListViewController.swift */; };
 		DFF33C5A2C27704800EB915A /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C592C27704800EB915A /* Model.swift */; };
 		DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5B2C27717600EB915A /* CourseViewModel.swift */; };
@@ -38,6 +39,7 @@
 		DF65121E2C53F175009ADB8E /* CourseInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseInfoViewController.swift; sourceTree = "<group>"; };
 		DF6512202C53F2A5009ADB8E /* Delegates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Delegates.swift; sourceTree = "<group>"; };
 		DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementViewController.swift; sourceTree = "<group>"; };
 		DF7587DF2C76EA3300EBAFCB /* FullCourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullCourseListViewController.swift; sourceTree = "<group>"; };
 		DFF33C582C2732A600EB915A /* Scope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scope.entitlements; sourceTree = "<group>"; };
 		DFF33C592C27704800EB915A /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 		DF338D852C27217D00E22348 /* Scope */ = {
 			isa = PBXGroup;
 			children = (
+				DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */,
 				DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */,
 				DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */,
 				DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */,
@@ -173,6 +176,7 @@
 				DF1B0F332C8A9A1800CA2CD4 /* ScheduleManagerViewController.swift in Sources */,
 				DFF33C622C2A67DD00EB915A /* BottomSheetViewController.swift in Sources */,
 				DFF33C5E2C2771E200EB915A /* Extensions.swift in Sources */,
+				DF677ED62C8FBF54009A407E /* DataManagementViewController.swift in Sources */,
 				DFF33C5A2C27704800EB915A /* Model.swift in Sources */,
 				DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */,
 				DF7587E02C76EA3300EBAFCB /* FullCourseListViewController.swift in Sources */,
