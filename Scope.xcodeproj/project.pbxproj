@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -19,12 +19,41 @@
 		DF677ED42C8E5DB7009A407E /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */; };
 		DF677ED62C8FBF54009A407E /* DataManagementViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */; };
 		DF7587E02C76EA3300EBAFCB /* FullCourseListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7587DF2C76EA3300EBAFCB /* FullCourseListViewController.swift */; };
+		DFC4D21E2C91BB3600737A85 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DFC4D1FD2C913F2400737A85 /* WidgetKit.framework */; };
+		DFC4D21F2C91BB3600737A85 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DFC4D1FF2C913F2400737A85 /* SwiftUI.framework */; };
+		DFC4D22C2C91BB3800737A85 /* CourseActivityWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DFC4D21D2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DFC4D2342C91BBD600737A85 /* CourseActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC4D2332C91BBD600737A85 /* CourseActivityAttributes.swift */; };
+		DFC4D2352C91BBD600737A85 /* CourseActivityAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC4D2332C91BBD600737A85 /* CourseActivityAttributes.swift */; };
 		DFF33C5A2C27704800EB915A /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C592C27704800EB915A /* Model.swift */; };
 		DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5B2C27717600EB915A /* CourseViewModel.swift */; };
 		DFF33C5E2C2771E200EB915A /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5D2C2771E200EB915A /* Extensions.swift */; };
 		DFF33C602C277E4D00EB915A /* CourseCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C5F2C277E4D00EB915A /* CourseCell.swift */; };
 		DFF33C622C2A67DD00EB915A /* BottomSheetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFF33C612C2A67DD00EB915A /* BottomSheetViewController.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DFC4D22A2C91BB3800737A85 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DF338D7B2C27217D00E22348 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DFC4D21C2C91BB3600737A85;
+			remoteInfo = CourseActivityWidgetExtensionExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DFC4D2162C913F2600737A85 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				DFC4D22C2C91BB3800737A85 /* CourseActivityWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewCourseViewController.swift; sourceTree = "<group>"; };
@@ -41,6 +70,10 @@
 		DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataManagementViewController.swift; sourceTree = "<group>"; };
 		DF7587DF2C76EA3300EBAFCB /* FullCourseListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullCourseListViewController.swift; sourceTree = "<group>"; };
+		DFC4D1FD2C913F2400737A85 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		DFC4D1FF2C913F2400737A85 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		DFC4D21D2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CourseActivityWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFC4D2332C91BBD600737A85 /* CourseActivityAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseActivityAttributes.swift; sourceTree = "<group>"; };
 		DFF33C582C2732A600EB915A /* Scope.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scope.entitlements; sourceTree = "<group>"; };
 		DFF33C592C27704800EB915A /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		DFF33C5B2C27717600EB915A /* CourseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseViewModel.swift; sourceTree = "<group>"; };
@@ -49,11 +82,34 @@
 		DFF33C612C2A67DD00EB915A /* BottomSheetViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheetViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		DFC4D22D2C91BB3800737A85 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = DFC4D21C2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		DFC4D2202C91BB3600737A85 /* CourseActivityWidgetExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (DFC4D22D2C91BB3800737A85 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = CourseActivityWidgetExtension; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		DF338D802C27217D00E22348 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFC4D21A2C91BB3600737A85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DFC4D21F2C91BB3600737A85 /* SwiftUI.framework in Frameworks */,
+				DFC4D21E2C91BB3600737A85 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -64,6 +120,8 @@
 			isa = PBXGroup;
 			children = (
 				DF338D852C27217D00E22348 /* Scope */,
+				DFC4D2202C91BB3600737A85 /* CourseActivityWidgetExtension */,
+				DFC4D1FC2C913F2400737A85 /* Frameworks */,
 				DF338D842C27217D00E22348 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -72,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				DF338D832C27217D00E22348 /* Scope-Class Tracker.app */,
+				DFC4D21D2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -98,8 +157,18 @@
 				DF6512202C53F2A5009ADB8E /* Delegates.swift */,
 				DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */,
 				DF7587DF2C76EA3300EBAFCB /* FullCourseListViewController.swift */,
+				DFC4D2332C91BBD600737A85 /* CourseActivityAttributes.swift */,
 			);
 			path = Scope;
+			sourceTree = "<group>";
+		};
+		DFC4D1FC2C913F2400737A85 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				DFC4D1FD2C913F2400737A85 /* WidgetKit.framework */,
+				DFC4D1FF2C913F2400737A85 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,15 +181,39 @@
 				DF338D7F2C27217D00E22348 /* Sources */,
 				DF338D802C27217D00E22348 /* Frameworks */,
 				DF338D812C27217D00E22348 /* Resources */,
+				DFC4D2162C913F2600737A85 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DFC4D22B2C91BB3800737A85 /* PBXTargetDependency */,
 			);
 			name = "Scope-Class Tracker";
 			productName = Scope;
 			productReference = DF338D832C27217D00E22348 /* Scope-Class Tracker.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DFC4D21C2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFC4D22E2C91BB3800737A85 /* Build configuration list for PBXNativeTarget "CourseActivityWidgetExtensionExtension" */;
+			buildPhases = (
+				DFC4D2192C91BB3600737A85 /* Sources */,
+				DFC4D21A2C91BB3600737A85 /* Frameworks */,
+				DFC4D21B2C91BB3600737A85 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DFC4D2202C91BB3600737A85 /* CourseActivityWidgetExtension */,
+			);
+			name = CourseActivityWidgetExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = CourseActivityWidgetExtensionExtension;
+			productReference = DFC4D21D2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -129,11 +222,14 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1540;
+				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
 					DF338D822C27217D00E22348 = {
 						CreatedOnToolsVersion = 15.4;
+					};
+					DFC4D21C2C91BB3600737A85 = {
+						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
@@ -151,6 +247,7 @@
 			projectRoot = "";
 			targets = (
 				DF338D822C27217D00E22348 /* Scope-Class Tracker */,
+				DFC4D21C2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -162,6 +259,13 @@
 			files = (
 				DF338D902C27217F00E22348 /* Assets.xcassets in Resources */,
 				DF338D932C27217F00E22348 /* Base in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFC4D21B2C91BB3600737A85 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,11 +290,28 @@
 				DF6512212C53F2A5009ADB8E /* Delegates.swift in Sources */,
 				DF0AA4B72C5932C100692B31 /* NewCourseViewController.swift in Sources */,
 				DF1B0F352C8BD33300CA2CD4 /* DayScheduleCustomizationViewController.swift in Sources */,
+				DFC4D2342C91BBD600737A85 /* CourseActivityAttributes.swift in Sources */,
 				DF338D872C27217D00E22348 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DFC4D2192C91BB3600737A85 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DFC4D2352C91BBD600737A85 /* CourseActivityAttributes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DFC4D22B2C91BB3800737A85 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DFC4D21C2C91BB3600737A85 /* CourseActivityWidgetExtensionExtension */;
+			targetProxy = DFC4D22A2C91BB3800737A85 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		DF338D912C27217F00E22348 /* LaunchScreen.storyboard */ = {
@@ -335,12 +456,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scope/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scope;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -366,12 +488,13 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Scope/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Scope;
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -379,6 +502,64 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.reitman.Scope;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DFC4D22F2C91BB3800737A85 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 44MV7A5JA6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CourseActivityWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CourseActivityWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reitman.Scope.CourseActivityWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DFC4D2302C91BB3800737A85 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 44MV7A5JA6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CourseActivityWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = CourseActivityWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.reitman.Scope.CourseActivityWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -402,6 +583,15 @@
 			buildConfigurations = (
 				DF338D982C27217F00E22348 /* Debug */,
 				DF338D992C27217F00E22348 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFC4D22E2C91BB3800737A85 /* Build configuration list for PBXNativeTarget "CourseActivityWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DFC4D22F2C91BB3800737A85 /* Debug */,
+				DFC4D2302C91BB3800737A85 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

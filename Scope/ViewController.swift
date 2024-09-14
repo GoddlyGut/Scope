@@ -231,7 +231,19 @@ extension ViewController {
                 self.timeRemaining.isHidden = false
                 self.noCoursesLeft.isHidden = true
                 self.classLengthLabel.text = (CourseViewModel.shared.currentOrNextCourse()?.startTime.formattedHMTime() ?? "00:00") + "-" +  (CourseViewModel.shared.currentOrNextCourse()?.endTime.formattedHMTime() ?? "00:00")
-                self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(CourseViewModel.shared.currentCourseRemainingTime)
+                if let nextEvent = CourseViewModel.shared.currentOrNextCourse() {
+                    let endTime = nextEvent.endTime
+                    let remainingTime = endTime.timeIntervalSinceNow
+                    self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(TimeInterval(Int(ceil(remainingTime))))
+
+                    // Ensure the Live Activity is updated with the same remaining time
+//                    CourseViewModel.shared.updateLiveActivityIfNeeded(remainingTime: remainingTime)
+                } else {
+                    self.timeRemaining.text = "No course"
+                }
+
+
+
                 if let course = CourseViewModel.shared.currentOrNextCourse() {
                     self.topLabel.text = course.isOngoing ? "Time remaining" : "Time till \(course.course.name) starts"
                 }

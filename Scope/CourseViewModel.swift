@@ -7,16 +7,19 @@
 
 import Foundation
 import CloudKit
+import ActivityKit
 
 class CourseViewModel {
     static var shared = CourseViewModel()
-    private var timer: Timer?
+    private var timer: DispatchSourceTimer!
     var onCountdownUpdate: (() -> Void)?
-    var currentCourseRemainingTime = 0.0
     var isCurrentCourseOngoing = false
     private let publicDatabase = CKContainer.default().privateCloudDatabase
+    private var dispatchTimer: DispatchSourceTimer?
+    var currentActivity: Activity<CourseActivityAttributes>?
+    private var lastUpdatedRemainingTime: TimeInterval?
     init() {
-        //
+        restoreLiveActivity()
         loadData()
         loadBlocks()
         loadScheduleTypes()
@@ -40,6 +43,156 @@ class CourseViewModel {
             //NotificationCenter.default.post(name: .didUpdateSchoolDays, object: nil)
         }
     }
+    
+    // Save the activity ID to UserDefaults
+    func saveCurrentActivityDetails(activityID: String, startTime: Date, endTime: Date) {
+        UserDefaults.standard.set(activityID, forKey: "currentActivityID")
+    }
+
+    // Retrieve the activity ID from UserDefaults
+    func retrieveCurrentActivityID() -> String? {
+        guard let uuidString = UserDefaults.standard.string(forKey: "currentActivityID") else { return nil }
+        return uuidString
+    }
+    
+
+    func retrieveCurrentActivityDetails() -> String? {
+        guard let activityID = UserDefaults.standard.string(forKey: "currentActivityID") else {
+            return nil
+        }
+        return activityID
+    }
+
+
+
+    func restoreLiveActivity() {
+        // Retrieve saved activity details
+        guard let details = retrieveCurrentActivityDetails(),
+              let activity = Activity<CourseActivityAttributes>.activities.first(where: { $0.id == details }) else {
+            return
+        }
+
+        // Assuming you can calculate the current course and remaining time based on system time
+        if let nextEvent = currentOrNextCourse() {
+            let remainingTime = nextEvent.endTime.timeIntervalSinceNow
+            
+            // Update the live activity with the calculated remaining time
+            updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+            
+            // Check if there is still remaining time
+            if remainingTime > 0 {
+                currentActivity = activity
+                print("Live Activity restored: \(activity.id)")
+            } else {
+                // If no time remains, end the live activity
+                endLiveActivity(activity: activity)
+                print("Live Activity ended: \(activity.id)")
+            }
+        } else {
+            // No active or next course, so end the live activity
+            endLiveActivity(activity: activity)
+            print("Live Activity ended as no current or next course was found.")
+        }
+    }
+
+
+    func startLiveActivity(for course: Course, startTime: Date, endTime: Date) {
+        if currentActivity != nil { return }
+
+        // Use the system time to calculate the remaining time
+        let timeRemaining = endTime.timeIntervalSinceNow
+
+        let attributes = CourseActivityAttributes(courseName: course.name)
+        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, endTime: endTime)
+
+        let activityContent = ActivityContent(state: initialContentState, staleDate: endTime)
+
+        do {
+            let activity = try Activity.request(attributes: attributes, content: activityContent)
+            currentActivity = activity
+            saveCurrentActivityDetails(activityID: activity.id, startTime: startTime, endTime: endTime)
+            print("Live Activity started: \(activity.id)")
+        } catch {
+            print("Failed to start Live Activity: \(error)")
+        }
+    }
+
+    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, endTime: Date) {
+        let updatedContentState = CourseActivityAttributes.ContentState(courseName: activity.attributes.courseName, endTime: endTime)
+            
+        Task {
+            do {
+                print("Attempting to update Live Activity...")
+                try await activity.update(using: updatedContentState)
+                print("Live Activity updated with end time")
+            } catch {
+                print("Error updating Live Activity: \(error)")
+            }
+        }
+    }
+
+
+    func endLiveActivity(activity: Activity<CourseActivityAttributes>) {
+        Task {
+            await activity.end(dismissalPolicy: .immediate)
+            currentActivity = nil
+            clearCurrentActivityDetails()  // Clear the saved details
+            print("Live Activity ended")
+        }
+    }
+
+    // Clear the activity ID and details from UserDefaults
+    func clearCurrentActivityDetails() {
+        UserDefaults.standard.removeObject(forKey: "currentActivityID")
+    }
+    
+    @objc private func updateCountdown() {
+        guard let nextEvent = currentOrNextCourse() else {
+            isCurrentCourseOngoing = false
+            postUpdateNotification()
+            if let activity = currentActivity {
+                endLiveActivity(activity: activity)
+            }
+            return
+        }
+
+        let now = Date()
+
+        // Check if the course is ongoing
+        isCurrentCourseOngoing = nextEvent.isOngoing
+
+        // Calculate remaining time dynamically
+        let remainingTime = nextEvent.endTime.timeIntervalSince(now)
+
+        if remainingTime > 0 && nextEvent.isOngoing {
+            // Start Live Activity if it hasn't been started yet
+            if currentActivity == nil {
+                startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime)
+            }
+
+            // Instead of storing remaining time, just use it directly
+            //updateLiveActivityIfNeeded(remainingTime: remainingTime - 1)
+
+            // Update the UI or any listeners
+            onCountdownUpdate?()
+        } else {
+            if let activity = currentActivity {
+                endLiveActivity(activity: activity)
+            }
+        }
+
+        postUpdateNotification()
+    }
+
+   
+
+    
+
+
+
+
+
+
     
     func scheduleType(on date: Date) -> ScheduleType? {
         // 1. Check if there's a specific schedule for the date
@@ -105,17 +258,34 @@ class CourseViewModel {
 //    }
     
     var scheduleTypes: [ScheduleType] = [] {
-            didSet {
-                saveScheduleTypes()
-                
-//                NotificationCenter.default.post(name: .didUpdateScheduleType, object: nil)
+        didSet {
+            saveScheduleTypes()
+
+            // Ensure that currentActivity is not nil
+            if let activity = currentActivity {
+                // Calculate remaining time based on system time and the course's end time
+                if let nextEvent = currentOrNextCourse() {
+                    updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+                }
             }
+
+            // Optionally post a notification if needed
+            // NotificationCenter.default.post(name: .didUpdateScheduleType, object: nil)
         }
+    }
+
     
     var blocksByScheduleType: [UUID: [Block]] = [:] {
             didSet {
                 //NotificationCenter.default.post(name: .didUpdateBlocks, object: nil)
                 saveBlocks()
+                
+                if let activity = currentActivity {
+                    // Calculate remaining time based on system time and the course's end time
+                    if let nextEvent = currentOrNextCourse() {
+                        updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+                    }
+                }
             }
         }
     
@@ -474,44 +644,25 @@ class CourseViewModel {
     }
     
     
+
     func startCountdownTimer() {
-            timer?.invalidate()  // Stops any existing timer
-            timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateCountdown), userInfo: nil, repeats: true)
+        let now = Date()
+        let nextSecond = now.timeIntervalSince1970.rounded(.down) + 1
+        let intervalToWait = nextSecond - now.timeIntervalSince1970
+        
+        self.timer = DispatchSource.makeTimerSource(flags: .strict, queue: DispatchQueue.global(qos: .userInteractive))
+        self.timer.schedule(wallDeadline: .now() + intervalToWait, repeating: 1.0, leeway: .nanoseconds(0))
+        self.timer.setEventHandler(qos: .userInteractive, flags: .enforceQoS) {
+            DispatchQueue.main.async {
+                self.updateCountdown()
+            }
         }
+        self.timer.resume()
+        
+       
+    }
 
-        @objc private func updateCountdown() {
-            guard let nextEvent = currentOrNextCourse() else {
-                currentCourseRemainingTime = 0
-                onCountdownUpdate?()
-                postUpdateNotification()
-                return
-            }
-
-            let now = Date()
-            
-            var remainingTime: Double?
-            
-            isCurrentCourseOngoing = nextEvent.isOngoing
-            
-            if nextEvent.startTime.timeIntervalSinceNow < 0 {
-                remainingTime = nextEvent.endTime.timeIntervalSince(now)
-            }
-            else {
-                remainingTime = nextEvent.startTime.timeIntervalSince(now)
-            }
-            
-
-            
-            if remainingTime! > 0 {
-                currentCourseRemainingTime = remainingTime!
-            } else {
-                currentCourseRemainingTime = 0.0
-            }
-            onCountdownUpdate?()
-            
-            postUpdateNotification()
-            
-        }
+    
     
     private func postUpdateNotification() {
         NotificationCenter.default.post(name: .didUpdateCountdown, object: nil)
@@ -533,13 +684,13 @@ class CourseViewModel {
         var shortestTimeDifference: TimeInterval = .greatestFiniteMagnitude
         
         // Check if school is running today
-        guard CourseViewModel.shared.isSchoolRunning(on: now) else {
+        guard isSchoolRunning(on: now) else {
             return nil
         }
 
         // Get the current schedule type for today
-        guard let dayType = CourseViewModel.shared.scheduleType(on: now),
-              let blocks = CourseViewModel.shared.blocksByScheduleType[dayType.id] else {
+        guard let dayType = scheduleType(on: now),
+              let blocks = blocksByScheduleType[dayType.id] else {
             return nil
         }
         
@@ -584,7 +735,7 @@ class CourseViewModel {
         }
 
         deinit {
-            timer?.invalidate()
+           
         }
     
     func convertStringToTime(timeString: String) -> Date? {
