@@ -33,7 +33,7 @@ class ViewController: UIViewController {
         presentSheet()
         
         NotificationCenter.default.addObserver(self, selector: #selector(updateUI), name: .didUpdateCountdown, object: nil)
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateScheduleType), name: .didUpdateScheduleTypeFromManager, object: nil)
     
     }
     
@@ -191,7 +191,11 @@ extension ViewController {
         }
     
     
-    
+    @objc func updateScheduleType(notification: Notification) {
+        DispatchQueue.main.async {
+            self.navigationItem.title = CourseViewModel.shared.scheduleType(on: Date())?.name ?? "None"
+        }
+    }
     
     @objc func updateUI(notification: Notification) {
        
@@ -232,9 +236,17 @@ extension ViewController {
                 self.noCoursesLeft.isHidden = true
                 self.classLengthLabel.text = (CourseViewModel.shared.currentOrNextCourse()?.startTime.formattedHMTime() ?? "00:00") + "-" +  (CourseViewModel.shared.currentOrNextCourse()?.endTime.formattedHMTime() ?? "00:00")
                 if let nextEvent = CourseViewModel.shared.currentOrNextCourse() {
-                    let endTime = nextEvent.endTime
-                    let remainingTime = endTime.timeIntervalSinceNow
-                    self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(TimeInterval(Int(ceil(remainingTime))))
+                    if nextEvent.isOngoing {
+                        let endTime = nextEvent.endTime
+                        let remainingTime = endTime.timeIntervalSinceNow
+                        self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(TimeInterval(Int(ceil(remainingTime))))
+                    }
+                    else {
+                        let startTime = nextEvent.startTime
+                        let remainingTime = startTime.timeIntervalSinceNow
+                        self.timeRemaining.text = CourseViewModel.shared.formatTimeInterval(TimeInterval(Int(ceil(remainingTime))))
+                    }
+                    
 
                     // Ensure the Live Activity is updated with the same remaining time
 //                    CourseViewModel.shared.updateLiveActivityIfNeeded(remainingTime: remainingTime)

@@ -412,22 +412,24 @@ class BlockCustomizationViewController: UIViewController {
             
             // Iterate over all courses
             for courseIndex in CourseViewModel.shared.courses.indices {
-                var course = CourseViewModel.shared.courses[courseIndex]
-                
-                // Find the schedule types used by this course that match the one being renamed
-                for dayScheduleIndex in course.schedule.indices {
-                    if course.schedule[dayScheduleIndex].scheduleType.id == scheduleType.id {
-                        // Update the name of the schedule type in the course
-                        CourseViewModel.shared.courses[courseIndex].schedule[dayScheduleIndex].scheduleType.name = blockName
-                    }
-                }
+                // Update the course in a safe way
+                CourseViewModel.shared.courses[courseIndex] = CourseViewModel.shared.courses[courseIndex].updatingScheduleTypeName(to: blockName, forScheduleTypeId: scheduleType.id)
             }
             
-            
+            // Update the schedule type name in schoolDays (specific days)
+            for schoolDayIndex in CourseViewModel.shared.schoolDays.indices {
+                if CourseViewModel.shared.schoolDays[schoolDayIndex].dayType.id == scheduleType.id {
+                    CourseViewModel.shared.schoolDays[schoolDayIndex].dayType.name = blockName
+                }
+            }
         }
         NotificationCenter.default.post(name: .didUpdateScheduleTypeFromManager, object: nil)
         dismiss(animated: true)
     }
+
+    // Helper method to update the schedule type name within the course
+
+
 
     // Refresh the available block numbers by removing the already used block numbers
     func refreshAvailableBlockNumbers(editingBlockNumber: Int? = nil) {
@@ -448,6 +450,18 @@ class BlockCustomizationViewController: UIViewController {
         let pickerViewController = TimePickerViewController(scheduleType: scheduleType, availableBlockNumbers: availableBlockNumbers)
         pickerViewController.delegate = self
         navigationController?.pushViewController(pickerViewController, animated: true)
+    }
+}
+
+extension Course {
+    func updatingScheduleTypeName(to newName: String, forScheduleTypeId scheduleTypeId: UUID) -> Course {
+        var updatedCourse = self
+        for dayScheduleIndex in schedule.indices {
+            if schedule[dayScheduleIndex].scheduleType.id == scheduleTypeId {
+                updatedCourse.schedule[dayScheduleIndex].scheduleType.name = newName
+            }
+        }
+        return updatedCourse
     }
 }
 

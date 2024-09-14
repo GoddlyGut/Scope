@@ -77,7 +77,7 @@ class CourseViewModel {
             let remainingTime = nextEvent.endTime.timeIntervalSinceNow
             
             // Update the live activity with the calculated remaining time
-            updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+            updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
             
             // Check if there is still remaining time
             if remainingTime > 0 {
@@ -96,14 +96,14 @@ class CourseViewModel {
     }
 
 
-    func startLiveActivity(for course: Course, startTime: Date, endTime: Date) {
+    func startLiveActivity(for course: Course, startTime: Date, endTime: Date, isOngoing: Bool) {
         if currentActivity != nil { return }
 
         // Use the system time to calculate the remaining time
         let timeRemaining = endTime.timeIntervalSinceNow
 
         let attributes = CourseActivityAttributes(courseName: course.name)
-        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, endTime: endTime)
+        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, endTime: endTime, isOngoing: isOngoing)
 
         let activityContent = ActivityContent(state: initialContentState, staleDate: endTime)
 
@@ -117,8 +117,8 @@ class CourseViewModel {
         }
     }
 
-    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, endTime: Date) {
-        let updatedContentState = CourseActivityAttributes.ContentState(courseName: activity.attributes.courseName, endTime: endTime)
+    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, courseName: String, endTime: Date, isOngoing: Bool) {
+        let updatedContentState = CourseActivityAttributes.ContentState(courseName: courseName, endTime: endTime, isOngoing: isOngoing)
             
         Task {
             do {
@@ -158,24 +158,40 @@ class CourseViewModel {
 
         let now = Date()
 
-        // Check if the course is ongoing
+        // Determine if the course is ongoing or upcoming
         isCurrentCourseOngoing = nextEvent.isOngoing
+        let remainingTime: TimeInterval
 
-        // Calculate remaining time dynamically
-        let remainingTime = nextEvent.endTime.timeIntervalSince(now)
-
-        if remainingTime > 0 && nextEvent.isOngoing {
-            // Start Live Activity if it hasn't been started yet
-            if currentActivity == nil {
-                startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime)
-            }
-
-            // Instead of storing remaining time, just use it directly
-            //updateLiveActivityIfNeeded(remainingTime: remainingTime - 1)
-
-            // Update the UI or any listeners
-            onCountdownUpdate?()
+        if isCurrentCourseOngoing {
+            // Calculate remaining time until the course ends
+            remainingTime = nextEvent.endTime.timeIntervalSince(now)
         } else {
+            // Calculate time until the course starts
+            remainingTime = nextEvent.startTime.timeIntervalSince(now)
+        }
+
+        if remainingTime > 0 {
+            if isCurrentCourseOngoing {
+                // Course is currently ongoing
+                // Start Live Activity if it hasn't been started yet
+                if currentActivity == nil {
+                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: true)
+                }
+
+                // Update the UI or any listeners
+                onCountdownUpdate?()
+            } else {
+                // Course is upcoming
+                // Start Live Activity if it hasn't been started yet
+                if currentActivity == nil {
+                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: false)
+                }
+
+                // You may want to update the remaining time until the class starts
+                onCountdownUpdate?()
+            }
+        } else {
+            // No ongoing course or the time has expired
             if let activity = currentActivity {
                 endLiveActivity(activity: activity)
             }
@@ -183,6 +199,7 @@ class CourseViewModel {
 
         postUpdateNotification()
     }
+
 
    
 
@@ -265,7 +282,7 @@ class CourseViewModel {
             if let activity = currentActivity {
                 // Calculate remaining time based on system time and the course's end time
                 if let nextEvent = currentOrNextCourse() {
-                    updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
                 }
             }
 
@@ -283,7 +300,7 @@ class CourseViewModel {
                 if let activity = currentActivity {
                     // Calculate remaining time based on system time and the course's end time
                     if let nextEvent = currentOrNextCourse() {
-                        updateLiveActivity(activity: activity, endTime: nextEvent.endTime)
+                        updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
                     }
                 }
             }
@@ -509,6 +526,14 @@ class CourseViewModel {
         didSet {
             NotificationCenter.default.post(name: .didUpdateCourseList, object: nil)
             saveData()
+            
+            if let activity = currentActivity {
+                // Calculate remaining time based on system time and the course's end time
+                if let nextEvent = currentOrNextCourse() {
+                    
+                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                }
+            }
         }
     }
 

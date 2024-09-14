@@ -13,6 +13,7 @@ struct CourseActivityAttributes: ActivityAttributes {
         var courseName: String
         
         var endTime: Date
+        var isOngoing: Bool
     }
 
     var courseName: String
