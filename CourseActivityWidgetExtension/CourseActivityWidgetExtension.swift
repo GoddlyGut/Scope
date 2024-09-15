@@ -23,57 +23,56 @@ struct CourseActivityWidgetExtensionEntryView: View {
             let elapsedTime = now.timeIntervalSince(startTime)
             let progress = totalDuration > 0 ? elapsedTime / totalDuration : 0
             
-            HStack {
-                VStack(alignment: .leading) {
-                    if !context.state.isOngoing {
-                        Text("Up next:")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
+            
+                // Regular widget content
+                HStack {
+                    VStack(alignment: .leading) {
+                        if !context.state.isOngoing {
+                            Text("Up next:")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .multilineTextAlignment(.leading)
+                        }
+                        Text("\(context.state.courseName)")
+                            .font(.title2)
+                            .fontWeight(.bold)
                             .multilineTextAlignment(.leading)
                     }
-                    Text("\(context.state.courseName)")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.leading)
+
+                    Spacer()
+
+                    VStack(alignment: .trailing) {
+                        Text(context.state.isOngoing ? "Time left:" : "Starts in:")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .multilineTextAlignment(.trailing)
+
+                        // Show the timer
+                        Text(timerInterval: now...(context.state.isOngoing ? endTime : startTime), countsDown: true)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing) { // Align content of VStack to the trailing edge
-                    Text(context.state.isOngoing ? "Time left:" : "Starts in:")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                        .multilineTextAlignment(.trailing)
 
-
-
-                    // Show the timer
-                    Text(timerInterval: now...(context.state.isOngoing ? endTime : startTime), countsDown: true)
-                        .font(.title3)
-                        .fontWeight(.semibold)
-                        
-                        .multilineTextAlignment(.trailing)
-                    
-                    
-                }
-            }
-            
-            if context.state.isOngoing {
-                // Horizontal progress bar
-                ProgressView(
-                    timerInterval: startTime...endTime,
-                    countsDown: false,
-                    label: { EmptyView() },
-                    currentValueLabel: { EmptyView() }
-                )
+                if context.state.isOngoing {
+                    // Horizontal progress bar
+                    ProgressView(
+                        timerInterval: startTime...endTime,
+                        countsDown: false,
+                        label: { EmptyView() },
+                        currentValueLabel: { EmptyView() }
+                    )
                     .progressViewStyle(LinearProgressViewStyle())
                     .tint(.pink)
+                }
             }
-        }
+        
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
 }
+
 
 
 

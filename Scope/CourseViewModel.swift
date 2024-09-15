@@ -125,7 +125,7 @@ class CourseViewModel {
             do {
                 print("Attempting to update Live Activity...")
                 try await activity.update(using: updatedContentState)
-                print("Live Activity updated with end time")
+                print("Live Activity updated")
             } catch {
                 print("Error updating Live Activity: \(error)")
             }
@@ -710,6 +710,11 @@ class CourseViewModel {
     
 
     func startCountdownTimer() {
+        if timer != nil {
+            timer.cancel()
+        }
+        
+        
         let now = Date()
         let nextSecond = now.timeIntervalSince1970.rounded(.down) + 1
         let intervalToWait = nextSecond - now.timeIntervalSince1970
