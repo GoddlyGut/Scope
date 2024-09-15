@@ -18,6 +18,7 @@ class CourseViewModel {
     private var dispatchTimer: DispatchSourceTimer?
     var currentActivity: Activity<CourseActivityAttributes>?
     private var lastUpdatedRemainingTime: TimeInterval?
+    private var currentDisplayedCourse: Course?
     init() {
         restoreLiveActivity()
         loadData()
@@ -77,7 +78,7 @@ class CourseViewModel {
             let remainingTime = nextEvent.endTime.timeIntervalSinceNow
             
             // Update the live activity with the calculated remaining time
-            updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+            updateLiveActivity(activity: activity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
             
             // Check if there is still remaining time
             if remainingTime > 0 {
@@ -103,7 +104,7 @@ class CourseViewModel {
         let timeRemaining = endTime.timeIntervalSinceNow
 
         let attributes = CourseActivityAttributes(courseName: course.name)
-        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, endTime: endTime, isOngoing: isOngoing)
+        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, startTime: startTime, endTime: endTime, isOngoing: isOngoing)
 
         let activityContent = ActivityContent(state: initialContentState, staleDate: endTime)
 
@@ -117,8 +118,8 @@ class CourseViewModel {
         }
     }
 
-    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, courseName: String, endTime: Date, isOngoing: Bool) {
-        let updatedContentState = CourseActivityAttributes.ContentState(courseName: courseName, endTime: endTime, isOngoing: isOngoing)
+    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, courseName: String, startTime: Date, endTime: Date, isOngoing: Bool) {
+        let updatedContentState = CourseActivityAttributes.ContentState(courseName: courseName, startTime: startTime, endTime: endTime, isOngoing: isOngoing)
             
         Task {
             do {
@@ -147,6 +148,9 @@ class CourseViewModel {
     }
     
     @objc private func updateCountdown() {
+        let now = Date()
+        
+        // Check if there's an ongoing or upcoming course
         guard let nextEvent = currentOrNextCourse() else {
             isCurrentCourseOngoing = false
             postUpdateNotification()
@@ -156,52 +160,87 @@ class CourseViewModel {
             return
         }
 
-        let now = Date()
-
-        // Determine if the course is ongoing or upcoming
-        isCurrentCourseOngoing = nextEvent.isOngoing
+        // Calculate remaining time for the ongoing or upcoming course
         let remainingTime: TimeInterval
-
-        if isCurrentCourseOngoing {
-            // Calculate remaining time until the course ends
+        if now >= nextEvent.startTime && now <= nextEvent.endTime {
+            // Course is currently ongoing
+            isCurrentCourseOngoing = true
             remainingTime = nextEvent.endTime.timeIntervalSince(now)
         } else {
-            // Calculate time until the course starts
+            // Course is upcoming
+            isCurrentCourseOngoing = false
             remainingTime = nextEvent.startTime.timeIntervalSince(now)
         }
-
-        if remainingTime > 0 {
-            if isCurrentCourseOngoing {
-                // Course is currently ongoing
-                // Start Live Activity if it hasn't been started yet
+        
+        if nextEvent.isOngoing {
+            if remainingTime > 0 {
+                // Course is ongoing
+                // Start or update Live Activity
                 if currentActivity == nil {
-                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: true)
+                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    currentDisplayedCourse = nextEvent.course // Update the tracked course
+                } else if currentDisplayedCourse != nextEvent.course {
+                    // Update live activity if it's not already showing this course
+                    updateLiveActivity(activity: currentActivity!, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    currentDisplayedCourse = nextEvent.course // Update the tracked course
                 }
-
-                // Update the UI or any listeners
                 onCountdownUpdate?()
             } else {
-                // Course is upcoming
+                // The current course has ended, transition to the next course
+                if let nextUpcomingEvent = nextCourse() {
+                    // Update the live activity for the next course if it's different
+                    if currentDisplayedCourse != nextUpcomingEvent.course {
+                        updateLiveActivity(activity: currentActivity!, courseName: nextUpcomingEvent.course.name, startTime: nextUpcomingEvent.startTime, endTime: nextUpcomingEvent.endTime, isOngoing: nextUpcomingEvent.isOngoing)
+                        currentDisplayedCourse = nextUpcomingEvent.course // Update the tracked course
+                    }
+                    else {
+                        if let activity = currentActivity {
+                            endLiveActivity(activity: activity)
+                        }
+                    }
+                }
+                else {
+                    if let activity = currentActivity {
+                        endLiveActivity(activity: activity)
+                    }
+                }
+            }
+        } else {
+            // Course is upcoming
+            if remainingTime >= 1 {
                 // Start Live Activity if it hasn't been started yet
                 if currentActivity == nil {
                     startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: false)
+                    currentDisplayedCourse = nextEvent.course // Update the tracked course
+                } else if currentDisplayedCourse != nextEvent.course {
+                    // Update live activity for the upcoming course if it's different
+                    updateLiveActivity(activity: currentActivity!, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    currentDisplayedCourse = nextEvent.course // Update the tracked course
                 }
-
-                // You may want to update the remaining time until the class starts
                 onCountdownUpdate?()
-            }
-        } else {
-            // No ongoing course or the time has expired
-            if let activity = currentActivity {
-                endLiveActivity(activity: activity)
+            } else {
+                // Transition to the course being ongoing when the time arrives
+                //if now >= nextEvent.startTime {
+                    isCurrentCourseOngoing = true
+                    guard let upcomingCourse = nextCourse() else {
+                        return
+                    }
+                    // Immediately handle the transition to ongoing
+                    // Update the live activity for the now ongoing course
+                    if currentActivity == nil {
+                        startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                        currentDisplayedCourse = nextEvent.course // Update the tracked course
+                    } else if nextEvent.isOngoing == false {
+                        // Update live activity for the ongoing course if it's different
+                        updateLiveActivity(activity: currentActivity!, courseName: upcomingCourse.course.name, startTime: nextEvent.startTime, endTime: upcomingCourse.endTime, isOngoing: true)
+                        currentDisplayedCourse = upcomingCourse.course // Update the tracked course
+                    }
+                //}
             }
         }
 
         postUpdateNotification()
     }
-
-
-   
 
     
 
@@ -282,7 +321,7 @@ class CourseViewModel {
             if let activity = currentActivity {
                 // Calculate remaining time based on system time and the course's end time
                 if let nextEvent = currentOrNextCourse() {
-                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
                 }
             }
 
@@ -300,7 +339,7 @@ class CourseViewModel {
                 if let activity = currentActivity {
                     // Calculate remaining time based on system time and the course's end time
                     if let nextEvent = currentOrNextCourse() {
-                        updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                        updateLiveActivity(activity: activity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
                     }
                 }
             }
@@ -531,7 +570,7 @@ class CourseViewModel {
                 // Calculate remaining time based on system time and the course's end time
                 if let nextEvent = currentOrNextCourse() {
                     
-                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    updateLiveActivity(activity: activity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
                 }
             }
         }
@@ -685,6 +724,58 @@ class CourseViewModel {
         self.timer.resume()
         
        
+    }
+    
+    func nextCourse(currentDate: Date = Date()) -> (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)? {
+        let now = currentDate
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let currentTime = formatter.string(from: now)
+        
+        var closestEvent: (course: Course, startTime: Date, endTime: Date, isOngoing: Bool)?
+        var shortestTimeDifference: TimeInterval = .greatestFiniteMagnitude
+        
+        // Check if school is running today
+        guard isSchoolRunning(on: now) else {
+            return nil
+        }
+
+        // Get the current schedule type for today
+        guard let dayType = scheduleType(on: now),
+              let blocks = blocksByScheduleType[dayType.id] else {
+            return nil
+        }
+        
+        for course in courses {
+            for daySchedule in course.schedule where daySchedule.scheduleType.id == dayType.id {
+                for courseBlock in daySchedule.courseBlocks {
+                    if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                        guard let startTime = combineDateAndTime(date: now, time: block.startTime),
+                              let endTime = combineDateAndTime(date: now, time: block.endTime) else {
+                            continue
+                        }
+                        
+                        if startTime > now {
+                            // Upcoming course
+                            let timeDifference = startTime.timeIntervalSince(now)
+                            if timeDifference < shortestTimeDifference {
+                                shortestTimeDifference = timeDifference
+                                closestEvent = (course, startTime, endTime, isOngoing: false)
+                            }
+                        } else if now >= startTime && now <= endTime {
+                            // Current ongoing course, but check if there's a closer upcoming course
+                            let timeDifference = endTime.timeIntervalSince(now)
+                            if timeDifference < shortestTimeDifference {
+                                shortestTimeDifference = timeDifference
+                                closestEvent = (course, startTime, endTime, isOngoing: true)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return closestEvent
     }
 
     

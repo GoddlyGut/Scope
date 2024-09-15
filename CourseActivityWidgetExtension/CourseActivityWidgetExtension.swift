@@ -13,56 +13,75 @@ struct CourseActivityWidgetExtensionEntryView: View {
     let context: ActivityViewContext<CourseActivityAttributes>
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                if !context.state.isOngoing {
-                    Text("Up next:")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
+        VStack {
+            let now = Date()
+            let endTime = context.state.endTime
+            let startTime = context.state.startTime
+
+            // Calculate the total and elapsed time
+            let totalDuration = endTime.timeIntervalSince(startTime)
+            let elapsedTime = now.timeIntervalSince(startTime)
+            let progress = totalDuration > 0 ? elapsedTime / totalDuration : 0
+            
+            HStack {
+                VStack(alignment: .leading) {
+                    if !context.state.isOngoing {
+                        Text("Up next:")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .multilineTextAlignment(.leading)
+                    }
+                    Text("\(context.state.courseName)")
+                        .font(.title2)
+                        .fontWeight(.bold)
                         .multilineTextAlignment(.leading)
                 }
-                Text("\(context.state.courseName)")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.leading)
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) { // Align content of VStack to the trailing edge
+                    Text(context.state.isOngoing ? "Time left:" : "Starts in:")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                        .multilineTextAlignment(.trailing)
+
+
+
+                    // Show the timer
+                    Text(timerInterval: now...(context.state.isOngoing ? endTime : startTime), countsDown: true)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        
+                        .multilineTextAlignment(.trailing)
+                    
+                    
+                }
             }
             
-            
-            Spacer()
-            
-            VStack(alignment: .trailing) { // Align content of VStack to the trailing edge
-                Text(context.state.isOngoing ? "Time left:" : "Starts in:")
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                    .multilineTextAlignment(.trailing)
-                // Use the exact same endTime used in the app's live activity
-                let now = Date()
-                let endTime = context.state.endTime // This timeRemaining comes from the live activity state
-                
-                
-                // Adjust to match the app's exact time
-                Text(timerInterval: now...endTime, countsDown: true)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: 200)
-                    .multilineTextAlignment(.trailing)
+            if context.state.isOngoing {
+                // Horizontal progress bar
+                ProgressView(
+                    timerInterval: startTime...endTime,
+                    countsDown: false,
+                    label: { EmptyView() },
+                    currentValueLabel: { EmptyView() }
+                )
+                    .progressViewStyle(LinearProgressViewStyle())
+                    .tint(.pink)
             }
         }
-        
-        .padding(.horizontal, 16)
-
-        
-        
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 }
-
-
 
 
 
 struct CourseActivityWidgetExtension: Widget {
     let kind: String = "CourseActivityWidgetExtension"
 
+    
+    
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: CourseActivityAttributes.self) { context in
             CourseActivityWidgetExtensionEntryView(context: context)
@@ -109,9 +128,17 @@ struct CourseActivityWidgetExtension: Widget {
                     }
                 },
                 compactLeading: {
+                    let endTime = context.state.endTime
+                    let startTime = context.state.startTime
                     if context.state.isOngoing {
-                        Image(systemName: "clock")
-                            .frame(maxWidth: 20)
+                        ProgressView(
+                            timerInterval: startTime...endTime,
+                            countsDown: false,
+                            label: { EmptyView() },
+                            currentValueLabel: { EmptyView() }
+                        )
+                        .progressViewStyle(.circular)
+                        .tint(.pink)
                     }
                     
                         

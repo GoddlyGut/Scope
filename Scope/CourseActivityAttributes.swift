@@ -11,7 +11,7 @@ import Foundation
 struct CourseActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var courseName: String
-        
+        var startTime: Date
         var endTime: Date
         var isOngoing: Bool
     }
