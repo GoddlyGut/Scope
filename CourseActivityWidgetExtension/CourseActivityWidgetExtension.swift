@@ -41,18 +41,32 @@ struct CourseActivityWidgetExtensionEntryView: View {
 
                     Spacer()
 
-                    VStack(alignment: .trailing) {
-                        Text(context.state.isOngoing ? "Time left:" : "Starts in:")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                            .multilineTextAlignment(.trailing)
+                    if !context.state.showPromptToOpenApp {
+                        VStack(alignment: .trailing) {
+                            Text(context.state.isOngoing ? "Time left:" : "Starts in:")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .multilineTextAlignment(.trailing)
 
-                        // Show the timer
-                        Text(timerInterval: now...(context.state.isOngoing ? endTime : startTime), countsDown: true)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .multilineTextAlignment(.trailing)
+                            // Show the timer
+                            Text(timerInterval: now...(context.state.isOngoing ? endTime : startTime), countsDown: true)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    } else {
+                        VStack(alignment: .trailing) {
+                            Image(systemName: "chevron.right")
+
+                            // Show the timer
+                            Text("Open app to resume!")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                                .multilineTextAlignment(.trailing)
+                        }
                     }
+                    
+                    
                 }
 
                 if context.state.isOngoing {
@@ -111,11 +125,11 @@ struct CourseActivityWidgetExtension: Widget {
                                     .multilineTextAlignment(.trailing)
                                 // Use the exact same endTime used in the app's live activity
                                 let now = Date()
-                                let endTime = context.state.endTime // This timeRemaining comes from the live activity state
+                                let time = context.state.isOngoing ? context.state.endTime : context.state.startTime // This timeRemaining comes from the live activity state
                                 
                                 
                                 // Adjust to match the app's exact time
-                                Text(timerInterval: now...endTime, countsDown: true)
+                                Text(timerInterval: now...time, countsDown: true)
                                     .font(.title3)
                                     .fontWeight(.semibold)
                                     .frame(maxWidth: 200)
@@ -155,7 +169,18 @@ struct CourseActivityWidgetExtension: Widget {
                     
                 },
                 minimal: {
-                    Text("Minimal")
+                    let endTime = context.state.endTime
+                    let startTime = context.state.startTime
+                    if context.state.isOngoing {
+                        ProgressView(
+                            timerInterval: startTime...endTime,
+                            countsDown: false,
+                            label: { EmptyView() },
+                            currentValueLabel: { EmptyView() }
+                        )
+                        .progressViewStyle(.circular)
+                        .tint(.pink)
+                    }
                 }
             )
         }

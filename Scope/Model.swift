@@ -65,6 +65,7 @@ struct SchoolDay: Codable {
 
 
 struct Block: Codable {
+    var id: UUID
     var blockNumber: Int
     var startTime: String
     var endTime: String

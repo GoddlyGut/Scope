@@ -881,7 +881,7 @@ class TimePickerViewController: UIViewController, UIPickerViewDelegate, UIPicker
             return
         }
         
-        let newBlock = Block(blockNumber: blockNumber, startTime: startTime, endTime: endTime)
+        let newBlock = Block(id: blockToEdit?.id ?? UUID(), blockNumber: blockNumber, startTime: startTime, endTime: endTime)
         
         if let block = blockToEdit { // Edit mode
             delegate?.didEditBlock(block: newBlock)

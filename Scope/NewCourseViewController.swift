@@ -543,9 +543,9 @@ extension AddDayViewController: UIPickerViewDataSource, UIPickerViewDelegate {
             }
         } else if pickerView == blockPicker {
             if currentBlocks.isEmpty {
-                blockPicker.isUserInteractionEnabled = false // Disable the picker if "None" is shown
+                //blockPicker.isUserInteractionEnabled = false // Disable the picker if "None" is shown
             } else {
-                blockPicker.isUserInteractionEnabled = true
+                //blockPicker.isUserInteractionEnabled = true
                 selectedBlock = currentBlocks[row]
             }
         }

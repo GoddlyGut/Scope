@@ -14,6 +14,7 @@ struct CourseActivityAttributes: ActivityAttributes {
         var startTime: Date
         var endTime: Date
         var isOngoing: Bool
+        var showPromptToOpenApp: Bool
     }
 
     var courseName: String

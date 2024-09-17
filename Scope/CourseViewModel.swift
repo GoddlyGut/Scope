@@ -97,14 +97,14 @@ class CourseViewModel {
     }
 
 
-    func startLiveActivity(for course: Course, startTime: Date, endTime: Date, isOngoing: Bool) {
+    func startLiveActivity(for course: Course, startTime: Date, endTime: Date, isOngoing: Bool, showPromptToOpenApp: Bool) {
         if currentActivity != nil { return }
 
         // Use the system time to calculate the remaining time
         let timeRemaining = endTime.timeIntervalSinceNow
 
         let attributes = CourseActivityAttributes(courseName: course.name)
-        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, startTime: startTime, endTime: endTime, isOngoing: isOngoing)
+        let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, startTime: startTime, endTime: endTime, isOngoing: isOngoing, showPromptToOpenApp: false)
 
         let activityContent = ActivityContent(state: initialContentState, staleDate: endTime)
 
@@ -118,8 +118,8 @@ class CourseViewModel {
         }
     }
 
-    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, courseName: String, startTime: Date, endTime: Date, isOngoing: Bool) {
-        let updatedContentState = CourseActivityAttributes.ContentState(courseName: courseName, startTime: startTime, endTime: endTime, isOngoing: isOngoing)
+    func updateLiveActivity(activity: Activity<CourseActivityAttributes>, courseName: String, startTime: Date, endTime: Date, isOngoing: Bool, showPromptToOpenApp: Bool = false) {
+        let updatedContentState = CourseActivityAttributes.ContentState(courseName: courseName, startTime: startTime, endTime: endTime, isOngoing: isOngoing, showPromptToOpenApp: showPromptToOpenApp)
             
         Task {
             do {
@@ -171,13 +171,21 @@ class CourseViewModel {
             isCurrentCourseOngoing = false
             remainingTime = nextEvent.startTime.timeIntervalSince(now)
         }
+        if let currentActivity = currentActivity {
+            if currentActivity.content.state.isOngoing != nextEvent.isOngoing {
+                updateLiveActivity(activity: currentActivity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                currentDisplayedCourse = nextEvent.course
+            }
+        }
+
+
         
         if nextEvent.isOngoing {
             if remainingTime > 0 {
                 // Course is ongoing
                 // Start or update Live Activity
                 if currentActivity == nil {
-                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing, showPromptToOpenApp: false)
                     currentDisplayedCourse = nextEvent.course // Update the tracked course
                 } else if currentDisplayedCourse != nextEvent.course {
                     // Update live activity if it's not already showing this course
@@ -189,7 +197,7 @@ class CourseViewModel {
                 // The current course has ended, transition to the next course
                 if let nextUpcomingEvent = nextCourse() {
                     // Update the live activity for the next course if it's different
-                    if currentDisplayedCourse != nextUpcomingEvent.course {
+                    if currentActivity?.content.state.courseName != nextEvent.course.name {
                         updateLiveActivity(activity: currentActivity!, courseName: nextUpcomingEvent.course.name, startTime: nextUpcomingEvent.startTime, endTime: nextUpcomingEvent.endTime, isOngoing: nextUpcomingEvent.isOngoing)
                         currentDisplayedCourse = nextUpcomingEvent.course // Update the tracked course
                     }
@@ -210,7 +218,7 @@ class CourseViewModel {
             if remainingTime >= 1 {
                 // Start Live Activity if it hasn't been started yet
                 if currentActivity == nil {
-                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: false)
+                    startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: false, showPromptToOpenApp: false)
                     currentDisplayedCourse = nextEvent.course // Update the tracked course
                 } else if currentDisplayedCourse != nextEvent.course {
                     // Update live activity for the upcoming course if it's different
@@ -228,7 +236,7 @@ class CourseViewModel {
                     // Immediately handle the transition to ongoing
                     // Update the live activity for the now ongoing course
                     if currentActivity == nil {
-                        startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing)
+                        startLiveActivity(for: nextEvent.course, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: nextEvent.isOngoing, showPromptToOpenApp: false)
                         currentDisplayedCourse = nextEvent.course // Update the tracked course
                     } else if nextEvent.isOngoing == false {
                         // Update live activity for the ongoing course if it's different
@@ -244,6 +252,31 @@ class CourseViewModel {
 
     
 
+    func checkAndUpdateCourseStatus() {
+        print("FETCH!")
+        let now = Date()
+        
+        // Get the current or next course
+        guard let nextEvent = currentOrNextCourse() else {
+            if let currentActivity = currentActivity {
+                endLiveActivity(activity: currentActivity)
+            }
+            
+            return
+        }
+        if let currentActivity = currentActivity {
+            if now >= nextEvent.endTime {
+                // The course has ended, update accordingly
+                if let currentDisplayedCourse = currentDisplayedCourse {
+                    updateLiveActivity(activity: currentActivity, courseName: nextEvent.course.name, startTime: nextEvent.startTime, endTime: nextEvent.endTime, isOngoing: true, showPromptToOpenApp: true)
+                }
+                
+            } else if now >= nextEvent.startTime && !currentActivity.content.state.isOngoing {
+                updateLiveActivity(activity: currentActivity, courseName: currentActivity.content.state.courseName, startTime: currentActivity.content.state.startTime, endTime: currentActivity.content.state.endTime, isOngoing: currentActivity.content.state.isOngoing, showPromptToOpenApp: true)
+            }
+        }
+        
+    }
 
 
 
@@ -345,52 +378,7 @@ class CourseViewModel {
             }
         }
     
-    func initializeBlocks() {
-        // Assuming these are your existing schedule types with predefined blocks
-        let regularDay = ScheduleType(name: "Regular Day")
-        let eDay = ScheduleType(name: "eDay")
-        let hDay = ScheduleType(name: "hDay")
-        let delayedOpening = ScheduleType(name: "Delayed Opening")
-        
-        // Add these schedule types to your CourseViewModel's scheduleTypes array
-        scheduleTypes = [regularDay, eDay, hDay, delayedOpening]
-        
-        // Assign blocks to each schedule type
-        blocksByScheduleType[regularDay.id] = [
-            Block(blockNumber: 1, startTime: "08:10", endTime: "09:08"),
-            Block(blockNumber: 2, startTime: "09:12", endTime: "10:14"),
-            Block(blockNumber: 3, startTime: "10:18", endTime: "11:16"),
-            Block(blockNumber: 4, startTime: "12:09", endTime: "13:07"),
-            Block(blockNumber: 5, startTime: "13:11", endTime: "14:09"),
-            Block(blockNumber: 6, startTime: "14:13", endTime: "15:11")
-        ]
-        
-        blocksByScheduleType[eDay.id] = [
-            Block(blockNumber: 1, startTime: "08:30", endTime: "09:09"),
-            Block(blockNumber: 2, startTime: "09:13", endTime: "09:52"),
-            Block(blockNumber: 3, startTime: "10:08", endTime: "10:47"),
-            Block(blockNumber: 4, startTime: "10:51", endTime: "11:30")
-        ]
-        
-        blocksByScheduleType[hDay.id] = [
-            Block(blockNumber: 1, startTime: "08:10", endTime: "08:38"),
-            Block(blockNumber: 2, startTime: "08:42", endTime: "09:08"),
-            Block(blockNumber: 3, startTime: "09:12", endTime: "09:38"),
-            Block(blockNumber: 4, startTime: "09:42", endTime: "10:08"),
-            Block(blockNumber: 5, startTime: "10:12", endTime: "10:38"),
-            Block(blockNumber: 6, startTime: "10:42", endTime: "11:08")
-        ]
-        
-        blocksByScheduleType[delayedOpening.id] = [
-            Block(blockNumber: 1, startTime: "10:10", endTime: "10:48"),
-            Block(blockNumber: 2, startTime: "10:52", endTime: "11:31"),
-            Block(blockNumber: 3, startTime: "12:24", endTime: "13:03"),
-            Block(blockNumber: 4, startTime: "13:07", endTime: "13:46")
-        ]
-        
-        // Save these blocks for persistence
-        saveBlocks()
-    }
+    
     
     func createScheduleType(name: String) -> ScheduleType {
             let newScheduleType = ScheduleType(name: name)
@@ -435,7 +423,7 @@ class CourseViewModel {
         // Retrieve the blocks array for the schedule type
         if var blocks = blocksByScheduleType[scheduleType.id] {
             // Find the index of the block that matches the block number
-            if let blockIndex = blocks.firstIndex(where: { $0.blockNumber == newBlock.blockNumber }) {
+            if let blockIndex = blocks.firstIndex(where: { $0.id == newBlock.id }) {
                 // Update the block at the found index
                 blocks[blockIndex] = newBlock
             }

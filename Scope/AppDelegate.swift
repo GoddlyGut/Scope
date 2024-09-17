@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import BackgroundTasks
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UISheetPresentationControllerDelegate {
@@ -39,13 +40,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISheetPresentationContro
         
         
 
-        
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.scope.updateCourseStatus", using: nil) { task in
+            self.handleAppRefresh(task: task as! BGAppRefreshTask)
+                }
         
         
         window?.rootViewController = tabBarController
         return true
     }
+    
+    func handleAppRefresh(task: BGAppRefreshTask) {
+        // Schedule the next refresh
+        scheduleAppRefresh()
+
+        // Perform the background update
+        CourseViewModel.shared.checkAndUpdateCourseStatus()
+
+        // Mark the task as complete
+        task.setTaskCompleted(success: true)
+    }
+    
+    
+    
+    
+    func scheduleAppRefresh() {
+        let request = BGAppRefreshTaskRequest(identifier: "com.scope.updateCourseStatus")
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 10) // Schedule to refresh 15 minutes later
+
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            print("Could not schedule app refresh: \(error)")
+        }
+    }
 
 
+    
 }
 
