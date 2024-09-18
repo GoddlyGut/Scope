@@ -13,6 +13,10 @@ protocol BottomSheetDelegate {
     
 }
 
+protocol CreateNewCourseDelegate: AnyObject {
+    func didSaveCourse(_ course: Course)
+    func didCancel()
+}
 
 
 

@@ -10,6 +10,7 @@
 		DF0AA4B72C5932C100692B31 /* NewCourseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */; };
 		DF1B0F332C8A9A1800CA2CD4 /* ScheduleManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */; };
 		DF1B0F352C8BD33300CA2CD4 /* DayScheduleCustomizationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */; };
+		DF1DFC052C9A2A4000A95E7B /* TestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1DFC042C9A2A3D00A95E7B /* TestView.swift */; };
 		DF338D872C27217D00E22348 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF338D862C27217D00E22348 /* AppDelegate.swift */; };
 		DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF338D8A2C27217D00E22348 /* ViewController.swift */; };
 		DF338D902C27217F00E22348 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = DF338D8F2C27217F00E22348 /* Assets.xcassets */; };
@@ -59,6 +60,7 @@
 		DF0AA4B62C5932C100692B31 /* NewCourseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewCourseViewController.swift; sourceTree = "<group>"; };
 		DF1B0F322C8A9A1100CA2CD4 /* ScheduleManagerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManagerViewController.swift; sourceTree = "<group>"; };
 		DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayScheduleCustomizationViewController.swift; sourceTree = "<group>"; };
+		DF1DFC042C9A2A3D00A95E7B /* TestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestView.swift; sourceTree = "<group>"; };
 		DF338D832C27217D00E22348 /* Scope-Class Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scope-Class Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF338D862C27217D00E22348 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DF338D8A2C27217D00E22348 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 		DF338D852C27217D00E22348 /* Scope */ = {
 			isa = PBXGroup;
 			children = (
+				DF1DFC042C9A2A3D00A95E7B /* TestView.swift */,
 				DF677ED52C8FBF4D009A407E /* DataManagementViewController.swift */,
 				DF677ED32C8E5DB2009A407E /* SettingsViewController.swift */,
 				DF1B0F342C8BD32A00CA2CD4 /* DayScheduleCustomizationViewController.swift */,
@@ -284,6 +287,7 @@
 				DFF33C5A2C27704800EB915A /* Model.swift in Sources */,
 				DF338D8B2C27217D00E22348 /* ViewController.swift in Sources */,
 				DF7587E02C76EA3300EBAFCB /* FullCourseListViewController.swift in Sources */,
+				DF1DFC052C9A2A4000A95E7B /* TestView.swift in Sources */,
 				DF65121F2C53F175009ADB8E /* CourseInfoViewController.swift in Sources */,
 				DFF33C5C2C27717600EB915A /* CourseViewModel.swift in Sources */,
 				DF677ED42C8E5DB7009A407E /* SettingsViewController.swift in Sources */,

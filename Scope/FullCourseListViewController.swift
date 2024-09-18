@@ -92,7 +92,7 @@ extension FullCourseListViewController {
     }
     
     @objc func openCreateCourseView() {
-        present(UINavigationController(rootViewController: NewCourseViewController(course: nil)), animated: true)
+        present(CreateNewCourseViewController(course: nil), animated: true)
     }
     
     @objc func updateUI() {
@@ -149,12 +149,12 @@ extension FullCourseListViewController: UITableViewDataSource, UITableViewDelega
             let selectedCourse = CourseViewModel.shared.courses[indexPath.row]
             
             // Initialize the CourseDetailViewController
-        let detailVC = NewCourseViewController(course: selectedCourse)
+        let detailVC = CreateNewCourseViewController(course: selectedCourse)
         
             // Pass the selected course to the detail view controller
             
             // Push the CourseDetailViewController onto the navigation stack
-        present(UINavigationController(rootViewController: detailVC), animated: true)
+        present(detailVC, animated: true)
             //navigationController?.pushViewController(detailVC, animated: true)
         }
 }

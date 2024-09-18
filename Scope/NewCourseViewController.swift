@@ -302,7 +302,7 @@ class NewCourseViewController: UIViewController, UITableViewDataSource, UITableV
         } else {
             // If the day doesn't exist, create a new schedule with the blocks
             let courseBlocks = blockNumbers.map { CourseBlock(courseName: courseName, blockNumber: $0) }
-            let newSchedule = CourseDaySchedule(scheduleType: scheduleType, courseBlocks: courseBlocks)
+            let newSchedule = CourseDaySchedule(id: UUID(), scheduleType: scheduleType, courseBlocks: courseBlocks)
             courseSchedule.append(newSchedule)
         }
         

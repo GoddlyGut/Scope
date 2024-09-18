@@ -64,7 +64,7 @@ struct SchoolDay: Codable {
 }
 
 
-struct Block: Codable {
+struct Block: Codable, Hashable {
     var id: UUID
     var blockNumber: Int
     var startTime: String
@@ -82,7 +82,7 @@ struct CourseBlock: Codable {
     var blockNumber: Int
 }
 
-struct Course: Equatable, Codable {
+struct Course: Identifiable, Equatable, Codable {
     static func == (lhs: Course, rhs: Course) -> Bool {
         return lhs.id == rhs.id
     }
@@ -92,7 +92,8 @@ struct Course: Equatable, Codable {
     var instructor: String
     var schedule: [CourseDaySchedule]
 }
-struct CourseDaySchedule: Codable {
+struct CourseDaySchedule: Identifiable, Codable {
+    var id: UUID
     var scheduleType: ScheduleType
     var courseBlocks: [CourseBlock]
 }
