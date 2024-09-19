@@ -115,21 +115,38 @@ struct SwiftUIView: View {
                     }
                     
                     
-                    Section {
+                    //Section {
                         //if let schedule = course?.schedule {
                         if schedule.isEmpty {
                             Text("None")
                                 .foregroundStyle(.gray)
                         }
-                        else {
-                            ForEach(schedule) { value in
-                                let blockNumbers = value.courseBlocks.map { "Block \($0.blockNumber)" }.joined(separator: ", ")
-                                
-                                // Display the schedule type name and the block numbers
-                                Text("\(value.scheduleType.name): \(blockNumbers.isEmpty ? "None" : blockNumbers)")
+                    else {
+                        ForEach(schedule.indices, id: \.self) { dayIndex in
+                            let daySchedule = schedule[dayIndex]
+                            Section {
+                                ForEach(daySchedule.courseBlocks.indices, id: \.self) { blockIndex in
+                                    let block = daySchedule.courseBlocks[blockIndex]
+                                    HStack {
+                                        Text("Block \(block.blockNumber)")
+                                        Spacer()
+                                    }
+                                    
+                                }
+                                .onDelete { offsets in
+                                    delete(dayIndex: dayIndex, blockOffsets: offsets)
+                                }
+                            } header: {
+                                HStack {
+                                    Text(daySchedule.scheduleType.name)
+                                    Spacer()
+                                    EditButton()
+                                    
+                                }
                             }
-                            .onDelete(perform: delete)
                         }
+                    }
+                            
                         
                         //}
                         
@@ -137,17 +154,17 @@ struct SwiftUIView: View {
                         //                    Text("None")
                         //                        .foregroundStyle(.gray)
                         //                }
-                    } header: {
-                        HStack {
-                            Text("Schedule")
-                            Spacer()
-                            
-                            EditButton()
-                            
-                        }
-                    } footer: {
-                        
-                    }
+//                    } header: {
+//                        HStack {
+//                            Text("Schedule")
+//                            Spacer()
+//                            
+//                            EditButton()
+//                            
+//                        }
+//                    } footer: {
+//                        
+//                    }
                     
                     Section {
                         Button(action: {
@@ -199,6 +216,7 @@ struct SwiftUIView: View {
              }
             
         }
+        
     }
     
     func save() {
@@ -210,9 +228,22 @@ struct SwiftUIView: View {
         delegate?.didSaveCourse(Course(id: course?.id ?? UUID(), name: courseName, instructor: instructorName, schedule: schedule))
     }
     
-    func delete(at offsets: IndexSet) {
-        schedule.remove(atOffsets: offsets)
+    func delete(dayIndex: Int, blockOffsets: IndexSet) {
+        // Get the day at the specified index
+        var day = schedule[dayIndex]
+        
+        // Remove the block at the specified offsets
+        day.courseBlocks.remove(atOffsets: blockOffsets)
+        
+        // If no more blocks are left in this day, remove the day itself
+        if day.courseBlocks.isEmpty {
+            schedule.remove(at: dayIndex)
+        } else {
+            // Otherwise, update the day in the schedule
+            schedule[dayIndex] = day
+        }
     }
+
     
 
     
