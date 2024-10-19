@@ -44,6 +44,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISheetPresentationContro
             self.handleAppRefresh(task: task as! BGAppRefreshTask)
                 }
         
+        NotificationManager.shared.requestNotificationPermission { granted in
+            if granted {
+                print("Notifications allowed")
+            } else {
+                print("Notifications denied")
+            }
+        }
+        
+        let openAppAction = UNNotificationAction(identifier: "OPEN_APP_ACTION", title: "Open App", options: .foreground)
+        let category = UNNotificationCategory(identifier: "OPEN_APP_CATEGORY", actions: [openAppAction], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+
+        UNUserNotificationCenter.current().delegate = self
         
         window?.rootViewController = tabBarController
         return true
@@ -76,5 +89,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UISheetPresentationContro
 
 
     
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    
+    // Called when a notification is tapped, this will ensure the app opens
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        // Check if the notification action is the default tap (open the app)
+        if response.actionIdentifier == UNNotificationDefaultActionIdentifier || response.actionIdentifier == "OPEN_APP_ACTION" {
+            // Here, you can optionally handle navigation logic, e.g., open a specific view
+//
+//            // Example: Navigating to the main view controller
+//            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+//            if let mainVC = storyboard.instantiateViewController(withIdentifier: "MainViewController") as? ViewController {
+//                if let window = UIApplication.shared.windows.first {
+//                    window.rootViewController = UINavigationController(rootViewController: mainVC)
+//                    window.makeKeyAndVisible()
+//                }
+//            }
+        }
+
+        completionHandler()
+    }
 }
 

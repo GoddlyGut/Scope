@@ -30,10 +30,60 @@ class CourseViewModel {
                 startCountdownTimer()
         //initializeBlocks()
         //addSchoolDay()
-       
-        
+        NotificationManager.shared.clearAllPendingNotifications()
+        scheduleNotificationsForAllCourses()
         
     }
+    
+    func scheduleNotificationsForAllCourses() {
+        var notifications: [(courseName: String, startTime: Date)] = []
+
+        // Loop over each school day in the future
+        for schoolDay in schoolDays {
+            let date = schoolDay.date ?? Date()
+            
+            // Get the courses for each specific day
+            let dayCourses = coursesForDay(date: date)
+            
+            for (course, block, _) in dayCourses {
+                // Calculate the start time by combining the day and block start time
+                if let startTime = combineDateAndTime(date: date, time: block.startTime) {
+                    notifications.append((courseName: course.name, startTime: startTime))
+                    print(startTime)
+                }
+            }
+        }
+        
+        
+        
+        // Schedule all notifications
+        NotificationManager.shared.scheduleNotifications(for: notifications)
+    }
+    
+    func coursesForDay(date: Date) -> [(course: Course, block: Block, dayType: ScheduleType)] {
+        // This is essentially the same as your `coursesForToday()` but accepts any date.
+        let dayOfWeek = DaysOfTheWeek(rawValue: Calendar.current.component(.weekday, from: date) - 1)!
+        
+        guard isSchoolRunning(on: date), let dayType = scheduleType(on: date) else { return [] }
+
+        var blocksForDate: [(course: Course, block: Block, dayType: ScheduleType)] = []
+
+        for course in courses {
+            for daySchedule in course.schedule where daySchedule.scheduleType.id == dayType.id {
+                if let blocks = blocksByScheduleType[dayType.id] {
+                    for courseBlock in daySchedule.courseBlocks {
+                        if let block = blocks.first(where: { $0.blockNumber == courseBlock.blockNumber }) {
+                            blocksForDate.append((course, block, daySchedule.scheduleType))
+                        }
+                    }
+                }
+            }
+        }
+
+        return blocksForDate
+    }
+
+
     
     var schoolDays: [SchoolDay] = [
         
@@ -41,6 +91,9 @@ class CourseViewModel {
      {
         didSet {
             saveData()
+            
+            NotificationManager.shared.clearAllPendingNotifications()
+            scheduleNotificationsForAllCourses()
             //NotificationCenter.default.post(name: .didUpdateSchoolDays, object: nil)
         }
     }
@@ -106,7 +159,7 @@ class CourseViewModel {
         let attributes = CourseActivityAttributes(courseName: course.name)
         let initialContentState = CourseActivityAttributes.ContentState(courseName: course.name, startTime: startTime, endTime: endTime, isOngoing: isOngoing, showPromptToOpenApp: false)
 
-        let activityContent = ActivityContent(state: initialContentState, staleDate: endTime)
+        let activityContent = ActivityContent(state: initialContentState, staleDate: nil)
 
         do {
             let activity = try Activity.request(attributes: attributes, content: activityContent)
@@ -350,6 +403,9 @@ class CourseViewModel {
         didSet {
             saveScheduleTypes()
 
+            NotificationManager.shared.clearAllPendingNotifications()
+            scheduleNotificationsForAllCourses()
+            
             // Ensure that currentActivity is not nil
             if let activity = currentActivity {
                 // Calculate remaining time based on system time and the course's end time
@@ -368,6 +424,9 @@ class CourseViewModel {
             didSet {
                 //NotificationCenter.default.post(name: .didUpdateBlocks, object: nil)
                 saveBlocks()
+                
+                NotificationManager.shared.clearAllPendingNotifications()
+                scheduleNotificationsForAllCourses()
                 
                 if let activity = currentActivity {
                     // Calculate remaining time based on system time and the course's end time
@@ -553,6 +612,9 @@ class CourseViewModel {
         didSet {
             NotificationCenter.default.post(name: .didUpdateCourseList, object: nil)
             saveData()
+            
+            NotificationManager.shared.clearAllPendingNotifications()
+            scheduleNotificationsForAllCourses()
             
             if let activity = currentActivity {
                 // Calculate remaining time based on system time and the course's end time
